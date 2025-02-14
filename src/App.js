@@ -1,25 +1,52 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import Login from './components/Login';
+import Register from './components/Register';
+import NavBar from './components/NavBar';
+import './styles.css'; // Importuj plik CSS
+import MainPage from './components/MainPage'
+import Invoices from './components/Invoices'
+import InvoiceView from './components/InvoiceView'
+import CreateInvoice from './components/CreateInvoice'
+import { InvoiceProvider } from './services/context';
 
-function App() {
+const AppWithNavBar = () => {
+  const location = useLocation(); // Hook do pobierania aktualnej trasy
+
+  // Sprawdzamy, czy jesteśmy na trasie logowania lub rejestracji
+  const hideNavBar = location.pathname === '/login' || location.pathname === '/register';
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      {/* Renderuj NavBar tylko, gdy nie jesteś na stronach logowania lub rejestracji */}
+      {!hideNavBar && <NavBar />}
+      <Routes>
+        {/* Trasy bez NavBar */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/createInvoice" element={<CreateInvoice />} />
+        <Route path="/createInvoice/:id" element={<CreateInvoice />} />
+
+        {/* Trasy z NavBar */}
+        <Route path="/home" element={<MainPage />} />
+        <Route path="/invoices" element={<Invoices />} />
+        <Route path="/Invoice/:id" element={<InvoiceView />} />
+
+        {/* Domyślna trasa */}
+        <Route path="/" element={<h1>Witamy w aplikacji!</h1>} />
+      </Routes>
+    </>
   );
-}
+};
+
+const App = () => {
+  return (
+    <InvoiceProvider>
+      <Router>
+        <AppWithNavBar/>
+      </Router>
+    </InvoiceProvider>
+  );
+};
 
 export default App;
