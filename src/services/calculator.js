@@ -5,7 +5,7 @@ export const calculateVAT = (netAmount, vatRate, quantity) => {
   };
 export const calculateGrossAmount = (netAmount, vatAmount, quantity) => {
     if (!netAmount || !quantity) return 0;
-    const grossValue = (parseFloat(netAmount) + parseFloat(vatAmount)) * quantity;
+    const grossValue = (parseFloat(netAmount)* quantity) + parseFloat(vatAmount);
     return grossValue;
   };
 export const calculateNetSum = (netAmount, quantity) => {

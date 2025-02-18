@@ -1,57 +1,59 @@
-body {
-    font-family: 'Arial', sans-serif; /* Możesz zmienić czcionkę na inną, jeśli chcesz */
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-  }
-  
-  .login-container {
-    background-color: white; /* Białe tło dla formularza */
-    padding: 20px;
-    border-radius: 15px; /* Zaokrąglone krawędzie */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Cień dla efektu głębi */
-    width: 300px; /* Szerokość kontenera */
-    text-align: center; /* Wyśrodkowanie tekstu */
-  }
-  
-  h1 {
-    color: #4CAF50; /* Ciemnozielony kolor nagłówka */
-    margin-bottom: 20px; /* Odstęp od nagłówka */
-  }
-  
-  .input-field {
-    width: 100%; /* Szerokość inputów na 100% */
-    padding: 10px;
-    margin: 10px 0; /* Odstępy między inputami */
-    border: 1px solid #4CAF50; /* Zielona ramka */
-    border-radius: 5px; /* Zaokrąglone krawędzie inputów */
-    transition: border-color 0.3s; /* Płynna zmiana koloru ramki */
-  }
-  
-  .input-field:focus {
-    outline: none; /* Usunięcie domyślnej ramki przy fokusie */
-    border-color: #2E7D32; /* Ciemniejszy odcień zieleni przy fokusie */
-  }
-  
-  .submit-button {
-    background-color: #4CAF50; /* Zielony kolor przycisku */
-    color: white; /* Kolor tekstu przycisku */
-    padding: 10px;
-    border: none; /* Usunięcie domyślnej ramki */
-    border-radius: 5px; /* Zaokrąglone krawędzie przycisku */
-    cursor: pointer; /* Zmiana kursora na pointer */
-    transition: background-color 0.3s; /* Płynna zmiana koloru tła */
-    width: 100%; /* Szerokość przycisku na 100% */
-  }
-  
-  .submit-button:hover {
-    background-color: #45a049; /* Ciemniejszy zielony kolor przy hoverze */
-  }
-  
-  .error {
-    color: red; /* Czerwony kolor dla komunikatów o błędach */
-    margin-bottom: 15px; /* Odstęp od komunikatu */
-  }
-  
+body, html, #root {
+  font-family: 'Arial', sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Nie centrować, zaczynać od góry */
+  min-height: 100vh; /* Minimalna wysokość na całe okno */
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Uniknięcie przewijania w poziomie */
+}
+
+/* Zapewnia odstęp od górnej belki */
+.app-container {
+  flex: 1;
+  padding-top: 70px; /* Dostosuj do wysokości navbaru */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Wyśrodkowanie przycisku */
+}
+
+/* Przycisk "Stwórz Fakturę" na środku */
+.table-container {
+  width: 60%; /* 60% szerokości ekranu */
+  margin: 20px auto; /* Wyśrodkowanie tabeli */
+  padding: 20px;
+}
+
+.create-invoice-button {
+  display: block; /* Przywrócenie przycisku */
+  margin: 10px auto; /* Wyśrodkowanie */
+  padding: 10px 20px;
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+#invoice-pdf {
+  width: 100%; /* Dynamiczna szerokość */
+  max-width: 210mm; /* Upewnia się, że nie przekroczy A4 */
+  box-sizing: border-box; /* Uwzględnia padding i border */
+}
+
+#invoice-pdf table {
+  width: 100%; /* Wymusza szerokość tabeli zgodną z kontenerem */
+  max-width: 100%;
+  border-collapse: collapse; /* Zapobiega dziwnym marginesom między komórkami */
+}
+
+#invoice-pdf td, #invoice-pdf th {
+  white-space: nowrap; /* Zapobiega zawijaniu się tekstu */
+  padding: 5px;
+}
+.invoice-container {
+  overflow-x: auto;
+  display: block; /* Zapewnia przewijanie na mniejszych ekranach */
+}
+
+

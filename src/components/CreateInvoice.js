@@ -24,7 +24,7 @@ const CreateInvoice = () => {
     sellerNip: '',
     buyerName: '',
     buyerAddress: '',
-    buyerNip: '',
+    buyerNIP: '',
     payment: 'bank_transfer', // Default payment method
     bankName: '',
     accountNumber: '',
@@ -55,18 +55,19 @@ const CreateInvoice = () => {
         ...prevData,
         buyerName: value,
         buyerAddress: selectedBuyer.address,
-        buyerNip: selectedBuyer.nip,
+        buyerNIP: selectedBuyer.nip,
 
       }));
       handleErrorChange('buyerName', setFormErrors);
     }
   }
-  const handleSave = (draft) => {
+  const handleSave = (draft, id) => {
+    console.log(formData)
     const validationErrors = validateForm(formData, products);
     if (Object.keys(validationErrors).length > 1)
       setFormErrors(validationErrors);
     else {
-      saveInvoice(formData, products, draft);
+      saveInvoice(formData, products, draft, id);
       markInvoiceAsAdded();
       navigate('/invoices')
     }
@@ -89,8 +90,8 @@ const CreateInvoice = () => {
 
   return (
 <LocalizationProvider dateAdapter={AdapterDayjs}>  
-  <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', '& > :not(style)': { m: 1, width: '100%', maxWidth: 800 }}}>
-    <Paper elevation={3} sx={{ padding: '16px', textAlign: 'center' }}>
+  <Box sx={{display: 'flex', flexDirection: 'column', mt: 15, alignItems: 'center', '& > :not(style)': { m: 1, width: '100%', maxWidth: 800 }}}>
+    <Paper elevation={3} sx={{ padding: '16px', textAlign: 'center', width: '100%' }}>
     <Typography variant="h6">Numer Faktury: {formData.number}</Typography>
       {/* Section for Dates */}
       <Box sx={{ marginTop: 2 }}>
@@ -240,148 +241,132 @@ const CreateInvoice = () => {
 
     {/* Section for Products */}
     {/* Sekcja produktów */}
-<Box
-  sx={{
-    marginTop: 3,
-    overflow: 'auto',
-    maxHeight: '400px', // Ustal maksymalną wysokość, aby ograniczyć przewijanie
-    paddingRight: 2,
-  }}
->
-  <Typography variant="subtitle1" sx={{ marginBottom: 1 }}>Produkty</Typography>
-  {products.map((product, index) => (
-    <Box key={index} sx={{ marginBottom: 2 }}>
-      {/* Pierwszy wiersz */}
-      <Grid container spacing={1}>
-        {/* Nazwa Produktu (2/3 szerokości) */}
-        <Grid item xs={8}>
-          <TextField
-            label="Nazwa Produktu"
-            name="productName"
-            fullWidth
-            value={product.productName}
-            onChange={(e) => handleProductChange(index, e, setProducts, products, setFormErrors)}
-            margin="normal"
-            error={!!formErrors[`productName_${index}`]}
-            helperText={formErrors[`productName_${index}`]}
-          />
-        </Grid>
-        {/* Ilość */}
-        <Grid item xs={1}>
-          <TextField
-            label="Ilość"
-            name="quantity"
-            type="number"
-            fullWidth
-            value={product.quantity}
-            onChange={(e) => handleProductChange(index, e, setProducts, products, setFormErrors)}
-            margin="normal"
-            error={!!formErrors[`quantity_${index}`]}
-            helperText={formErrors[`quantity_${index}`]}
-          />
-        </Grid>
-        {/* Stawka VAT */}
-        <Grid item xs={1.3}>
-          <TextField
-            label="VAT"
-            name="vatRate"
-            select
-            fullWidth
-            value={product.vatRate}
-            onChange={(e) => handleProductChange(index, e, setProducts, products, setFormErrors)}
-            margin="normal"
-          >
-            <MenuItem value="5%">5%</MenuItem>
-            <MenuItem value="10%">10%</MenuItem>
-            <MenuItem value="23%">23%</MenuItem>
-          </TextField>
-        </Grid>
-        {/* Cena Netto */}
-        <Grid item xs={1.7}>
-          <TextField
-            label="Cena Netto"
-            name="netAmount"
-            type="number"
-            fullWidth
-            value={product.netAmount}
-            onChange={(e) => handleProductChange(index, e, setProducts, products, setFormErrors)}
-            margin="normal"
-            sx={{
-              '& input[type=number]': {
-                MozAppearance: 'textfield',
-              },
-              '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
-                WebkitAppearance: 'none',
-                margin: 0,
-              },
-            }}
-            error={!!formErrors[`netAmount_${index}`]}
-            helperText={formErrors[`netAmount_${index}`]}
-          />
-        </Grid>
-      </Grid>
-
-    {/* Drugi wiersz */}
-    <Grid container spacing={1} justifyContent="flex-end">
-      {/* Ikona usuwania - pokazuje się tylko dla dodatkowych produktów */}
-      {index > 0 && (
-        <Grid item xs={1} container justifyContent="flex-start">
-          <IconButton onClick={() => removeProduct(index, products, setProducts)} color="secondary">
-            <RemoveIcon />
-          </IconButton>
-        </Grid>
-      )}
-
-      {/* Upewniamy się, że przy pierwszym produkcie ikona nie zajmuje miejsca */}
-      {index === 0 && <Grid item xs={3} />}
-
-      {/* Formularz dla każdego produktu */}
-      <Grid item xs={6}>
-        <Grid container spacing={1}>
-          <Grid item xs={4.5}>
-            <TextField
-              label="Wartość Netto"
-              name="netSum"
-              type="number"
-              fullWidth
-              value={calculateNetSum(product.netAmount, product.quantity)}
-              margin="normal"
-              InputProps={{
-                readOnly: true,
-              }}
-            />
+    <Box>
+      <Typography variant="subtitle1" sx={{ marginBottom: 1 }}>Produkty</Typography>
+      {products.map((product, index) => (
+        <Box key={index} sx={{ marginBottom: 2 }}>
+          {/* Pierwszy wiersz */}
+          <Grid container spacing={1} justifyContent="flex-end">
+            <Grid item xs={10.5}>
+              <TextField
+                label="Nazwa Produktu"
+                name="productName"
+                fullWidth
+                value={product.productName}
+                onChange={(e) => handleProductChange(index, e, setProducts, products, setFormErrors)}
+                margin="normal"
+                error={!!formErrors[`productName_${index}`]}
+                helperText={formErrors[`productName_${index}`]}
+              />
+            </Grid>
+            {/* Ilość */}
+            <Grid item xs={1.5}>
+              <TextField
+                label="Ilość"
+                name="quantity"
+                type="number"
+                fullWidth
+                value={product.quantity}
+                onChange={(e) => handleProductChange(index, e, setProducts, products, setFormErrors)}
+                margin="normal"
+                error={!!formErrors[`quantity_${index}`]}
+                helperText={formErrors[`quantity_${index}`]}
+              />
+            </Grid>
           </Grid>
-          <Grid item xs={3}>
-            <TextField
-              label="Kwota VAT"
-              name="vatAmount"
-              type="number"
-              fullWidth
-              value={calculateVAT(product.netAmount, product.vatRate, product.quantity)}
-              margin="normal"
-              InputProps={{
-                readOnly: true,
-              }}
-            />
-          </Grid>
-          <Grid item xs={4.5}>
-            <TextField
-              label="Kwota Brutto"
-              name="grossAmount"
-              type="number"
-              fullWidth
-              value={calculateGrossAmount(product.netAmount, product.vatAmount, product.quantity)}
-              margin="normal"
-              InputProps={{
-                readOnly: true,
-              }}
-            />
-          </Grid>
-        </Grid>
-      </Grid>
-    </Grid>
-  </Box>
-  ))}
+            {/* Drugi wiersz */}
+          <Grid container spacing={1} justifyContent="flex-end">
+              {/* Ikona usuwania - pokazuje się tylko dla dodatkowych produktów */}
+              {index > 0 && (
+                <Grid item xs={1} container justifyContent="flex-start">
+                  <IconButton onClick={() => removeProduct(index, products, setProducts)} color="secondary">
+                    <RemoveIcon />
+                  </IconButton>
+                </Grid>
+              )}
+            {/* Stawka VAT */}
+            <Grid item xs={1.3} >
+              <TextField
+                label="VAT"
+                name="vatRate"
+                select
+                fullWidth
+                value={product.vatRate}
+                onChange={(e) => handleProductChange(index, e, setProducts, products, setFormErrors)}
+                margin="normal"
+              >
+                <MenuItem value="5%">5%</MenuItem>
+                <MenuItem value="10%">10%</MenuItem>
+                <MenuItem value="23%">23%</MenuItem>
+              </TextField>
+            </Grid>
+            {/* Cena Netto */}
+            <Grid item xs={1.7}>
+              <TextField
+                label="Cena Netto"
+                name="netAmount"
+                type="number"
+                fullWidth
+                value={product.netAmount}
+                onChange={(e) => handleProductChange(index, e, setProducts, products, setFormErrors)}
+                margin="normal"
+                sx={{
+                  '& input[type=number]': {
+                    MozAppearance: 'textfield',
+                  },
+                  '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
+                    WebkitAppearance: 'none',
+                    margin: 0,
+                  },
+                }}
+                error={!!formErrors[`netAmount_${index}`]}
+                helperText={formErrors[`netAmount_${index}`]}
+              />
+            </Grid>
+
+              {/* Formularz dla każdego produktu */}
+              <Grid item xs={2}>
+                <TextField
+                  label="Wartość Netto"
+                  name="netSum"
+                  type="number"
+                  fullWidth
+                  value={calculateNetSum(product.netAmount, product.quantity)}
+                  margin="normal"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              </Grid>
+              <Grid item xs={2}>
+                <TextField
+                  label="Kwota VAT"
+                  name="vatAmount"
+                  type="number"
+                  fullWidth
+                  value={calculateVAT(product.netAmount, product.vatRate, product.quantity)}
+                  margin="normal"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              </Grid>
+              <Grid item xs={2}>
+                <TextField
+                  label="Kwota Brutto"
+                  name="grossAmount"
+                  type="number"
+                  fullWidth
+                  value={calculateGrossAmount(product.netAmount, product.vatAmount, product.quantity)}
+                  margin="normal"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              </Grid>
+            </Grid>
+      </Box>
+      ))}
 
         {/* Button to Add New Product */}
         <IconButton onClick={() =>addProduct(products, setProducts)} color="primary" sx={{ marginTop: 2 }}>
@@ -390,10 +375,10 @@ const CreateInvoice = () => {
       </Box>
       {/* Buttons for Save and Save as Draft */}
       <Box sx={{ marginTop: 3, display: 'flex', justifyContent: 'space-between' }}>
-        <Button variant="outlined" color="primary" onClick={() => handleSave(true)}>
+        <Button variant="outlined" color="primary" onClick={() => handleSave(true, id)}>
           Zapisz Szkic
         </Button>
-        <Button variant="contained" color="primary" onClick={() => handleSave(false)}>
+        <Button variant="contained" color="primary" onClick={() => handleSave(false, id)}>
           Zapisz
         </Button>
       </Box>

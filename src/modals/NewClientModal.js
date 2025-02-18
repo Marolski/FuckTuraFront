@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, TextField, Typography, Modal, Paper } from '@mui/material';
-import { customerBusinessAPI } from '../services/api';  // Zaimportuj API
+import { customerAPI, customerBusinessAPI } from '../services/api';  
+import { validateClientForm } from '../services/validator';
 
-const NewClientModal = ({ open, onClose, onSave, businessId }) => {
+const NewClientModal = ({ open, onClose, onSave, businessId, clientToEdit  }) => {
   const [clientData, setClientData] = useState({
     name: '',
     address: '',
     nip: ''
   });
 
-  const [loading, setLoading] = useState(false);  // Zmienna stanu do śledzenia, czy zapis jest w toku
-  const [error, setError] = useState(null);       // Zmienna stanu do przechowywania błędów
+  const [loading, setLoading] = useState(false);  
+  const [errors, setErrors] = useState({});  // Zmienna stanu do przechowywania błędów
 
-  // Funkcja resetująca formularz
   const resetForm = () => {
     setClientData({
       name: '',
@@ -21,54 +21,73 @@ const NewClientModal = ({ open, onClose, onSave, businessId }) => {
     });
   };
 
-  // Resetuj formularz po zamknięciu modala
   useEffect(() => {
-    if (!open) {
+    if (clientToEdit && clientToEdit.id) {
+      setClientData(clientToEdit);
+    } else {
       resetForm();
-      setError(null);  // Wyczyść błędy po zamknięciu modala
     }
-  }, [open]);
+  }, [clientToEdit, open]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Usuwanie błędu walidacji dla pola, które zostało edytowane
+    setErrors((prevErrors) => {
+      const newErrors = { ...prevErrors };
+      if (newErrors[name]) {
+        delete newErrors[name];  // Usuwamy błąd dla edytowanego pola
+      }
+      return newErrors;
+    });
+
     setClientData((prevData) => ({
       ...prevData,
       [name]: value
     }));
   };
 
-  // Funkcja do obsługi zapisu klienta
   const handleSave = async () => {
+    const validationErrors = validateClientForm(clientData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors); // Zapisujemy błędy walidacji w stanie
+      return;
+    }
+
     setLoading(true);
-    setError(null);
-    
+    setErrors({});
+
     try {
-      // Wywołanie API do zapisania klienta
-      console.log(businessId)
-      await customerBusinessAPI.createCustomer(businessId, clientData);
-      onSave(clientData);    // Powiadomienie nadrzędnego komponentu o sukcesie
-      resetForm();           // Resetuj formularz po zapisaniu
-      onClose();             // Zamknij modal po zapisaniu
+      if (clientToEdit && clientToEdit.id) {
+        await customerAPI.update(clientToEdit.id, clientData);
+      } else {
+        await customerBusinessAPI.createCustomer(businessId, clientData);
+      }
+      onSave();
+      resetForm();
+      onClose();
     } catch (err) {
-      setError('Nie udało się zapisać klienta. Spróbuj ponownie.');  // Ustaw komunikat o błędzie
+      setErrors({ general: 'Nie udało się zapisać klienta. Spróbuj ponownie.' });
     } finally {
-      setLoading(false);     // Ustaw zakończenie stanu ładowania
+      setLoading(false);
     }
   };
 
   const handleCancel = () => {
-    resetForm(); // Zresetuj formularz, ale nie zapisuj
-    onClose();   // Zamknij modal po kliknięciu "Anuluj"
+    resetForm();
+    onClose();
   };
 
   return (
     <Modal open={open} onClose={onClose}>
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <Paper elevation={3} sx={{ padding: 3, width: 400 }}>
-          <Typography variant="h6" sx={{ marginBottom: 2 }}>Utwórz klienta</Typography>
-          
-          {error && <Typography color="error" sx={{ marginBottom: 2 }}>{error}</Typography>}
-          
+          <Typography variant="h6" sx={{ marginBottom: 2 }}>
+            {clientToEdit ? 'Edytuj klienta' : 'Utwórz klienta'}
+          </Typography>
+
+          {errors.general && <Typography color="error" sx={{ marginBottom: 2 }}>{errors.general}</Typography>}
+
           <TextField
             label="Nazwa klienta"
             name="name"
@@ -76,7 +95,9 @@ const NewClientModal = ({ open, onClose, onSave, businessId }) => {
             margin="normal"
             value={clientData.name}
             onChange={handleChange}
-            disabled={loading}  // Zablokuj pola podczas zapisu
+            error={!!errors.name}
+            helperText={errors.name}
+            disabled={loading}
           />
           <TextField
             label="Adres"
@@ -85,6 +106,8 @@ const NewClientModal = ({ open, onClose, onSave, businessId }) => {
             margin="normal"
             value={clientData.address}
             onChange={handleChange}
+            error={!!errors.address}
+            helperText={errors.address}
             disabled={loading}
           />
           <TextField
@@ -94,14 +117,17 @@ const NewClientModal = ({ open, onClose, onSave, businessId }) => {
             margin="normal"
             value={clientData.nip}
             onChange={handleChange}
+            error={!!errors.nip}
+            helperText={errors.nip}
             disabled={loading}
           />
+
           <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
             <Button variant="outlined" color="secondary" onClick={handleCancel} disabled={loading}>
               Anuluj
             </Button>
             <Button variant="contained" color="primary" onClick={handleSave} disabled={loading}>
-              {loading ? 'Zapisywanie...' : 'Zapisz klienta'}
+              {loading ? 'Zapisywanie...' : clientToEdit ? 'Zapisz zmiany' : 'Zapisz klienta'}
             </Button>
           </Box>
         </Paper>

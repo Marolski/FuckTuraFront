@@ -1,4 +1,4 @@
-import { Card, CardContent, Typography, Grid, Divider, Box, Paper,TableContainer, Table, TableCell,TableBody,TableHead, TableRow, Button } from '@mui/material';
+import { Card, CardContent, Typography, Grid, Divider, Box, Paper,TableContainer, Table, TableCell,TableBody,TableHead, TableRow, Button, autocompleteClasses } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { invoiceAPI } from '../services/api';
 import { useParams } from 'react-router-dom';
@@ -24,215 +24,238 @@ const InvoiceDetail = () => {
   }, [id]);
 
   const generatePDF = () => {
-    const element = document.getElementById('invoice-pdf'); // Zidentyfikuj element do wygenerowania PDF
+    const element = document.getElementById('invoice-pdf');
+    const summarySection = document.getElementById('summary-section'); // Pobranie sekcji statusu
+  
+    const parent = summarySection ? summarySection.parentNode : null;
+    console.log(parent)
+    const removedSection = summarySection;
+    console.log(removedSection)
 
+    // Sprawdzenie, czy element istnieje przed próbą usunięcia
+    if (summarySection && parent)
+      parent.removeChild(summarySection);
+  
     const options = {
-      margin:       0.5, // Ustaw marginesy na małe, aby zaoszczędzić miejsce
-      filename:     `Faktura_${invoice.number}.pdf`,
-      html2canvas:  { scale: 2, logging: false, dpi: 300 }, // Ustaw wyższą rozdzielczość
-      jsPDF:        { 
-        unit: 'in', 
-        format: 'letter', 
-        orientation: 'portrait', 
-        compress: true, 
-        pageSize: 'A4', // Format A4
-        autoPaging: true, // Automatycznie dopasowuje do strony
-        maxWidth: 595, // Maksymalna szerokość strony A4 w jednostkach 'in'
-        maxHeight: 842, // Maksymalna wysokość strony A4
-        putOnlyUsedFonts: true,
-        scale: 0.8 // Skaluje zawartość, aby zmieściła się na jednej stronie
+      margin: 5, // Równomierne marginesy
+      filename: `Faktura_${invoice.number}.pdf`,
+      image: { type: 'jpeg', quality: 1.0 }, // Maksymalna jakość obrazu
+      html2canvas: {
+        scale: 3, // Zwiększenie skali dla lepszej jakości
+        useCORS: true, // Obsługa zasobów zewnętrznych
+        logging: false,
+        dpi: 300,
+        letterRendering: true,
+        width: 800, // Wymuszenie szerokości w px (odpowiednik A4)
+        height: 900 // Dynamiczna wysokość
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
       }
     };
-
-    html2pdf().from(element).set(options).save(); // Generowanie PDF
+  
+    html2pdf()
+      .set(options)
+      .from(element)
+      .toCanvas()
+      .toPdf()
+      .get('pdf')
+      .then(pdf => {
+        pdf.internal.scaleFactor = 1.1; // Wymuszenie większej skali
+        const totalPages = pdf.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          pdf.setPage(i);
+          pdf.setFontSize(11); // Dopasowanie czcionki
+        }
+      })
+      .save()
+      .then(() => {
+        parent.appendChild(removedSection); 
+      });
   };
+  
+  
+  
 
   if (!invoice) {
     return <Typography>Ładowanie szczegółów faktury...</Typography>;
   }
 
   return (
-  <div>
-    <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
-      <Button variant="contained" color="primary" onClick={() => generatePDF()}>
-        Generuj PDF
-      </Button>
-      <Button variant="contained" color="primary" onClick={() => {navigate(`/createInvoice/${id}`); console.log(id)}}>
-        Edytuj
-      </Button>
+      <Box sx={{mt: 15, width:'60%',  alignItems: 'center', mr: 'auto', ml:'auto'}}>
+        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+          <Button variant="contained" color="primary" onClick={() => generatePDF()}>
+            Generuj PDF
+          </Button>
+          <Button variant="contained" color="primary" onClick={() => { navigate(`/createInvoice/${id}`); }}>
+            Edytuj
+          </Button>
+        </Box>
+        <div id="invoice-pdf">
+          <Paper elevation={4} sx={{ width:'100%', margin: 'auto', padding: 3, borderRadius: 2 }}>
+            <Typography variant="h4" align="center" sx={{ fontWeight: 'bold', mb: 1 }}>
+              Faktura VAT
+            </Typography>
+            <Typography variant="h6" align="center" sx={{ color: 'text.secondary', mb: 4 }}>
+              {invoice.number}
+            </Typography>
+  
+            <Box>
+              <Grid container spacing={15}>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                    Data wystawienia:
+                  </Typography>
+                  <Typography>{new Date(invoice.invoiceDate).toLocaleDateString()}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                    Data sprzedaży:
+                  </Typography>
+                  <Typography>{new Date(invoice.saleDate).toLocaleDateString()}</Typography>
+                </Grid>
+              </Grid>
+  
+              <Divider sx={{ my: 1 }} />
+  
+              <Grid container spacing={15}>
+                <Grid item xs={6}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                    Sprzedawca:
+                  </Typography>
+                  <Typography>{invoice.sellerName}</Typography>
+                  <Typography>{invoice.sellerAddress}</Typography>
+                  <Typography>NIP: {invoice.sellerNIP}</Typography>
+                </Grid>
+  
+                <Grid item xs={6}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                    Kupujący:
+                  </Typography>
+                  <Typography>{invoice.buyerName}</Typography>
+                  <Typography>{invoice.buyerAddress}</Typography>
+                  <Typography>NIP: {invoice.buyerNIP}</Typography>
+                </Grid>
+              </Grid>
+            </Box>
+  
+            <Divider sx={{ my: 1 }} />
+  
+            <Grid container spacing={15}>
+              <Grid item xs={6}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  Termin płatności:
+                </Typography>
+                <Typography>{new Date(invoice.dateOfPayment).toLocaleDateString()}</Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  Metoda płatności:
+                </Typography>
+                <Typography>{invoice.payment === 'bank_transfer' ? 'Przelew bankowy' : 'Gotówka'}</Typography>
+              </Grid>
+            </Grid>
+            <Grid container spacing={15} sx={{ display: invoice.payment === 'cash' ? 'none' : 'flex' }}>
+              <Grid item xs={6}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  Nazwa banku:
+                </Typography>
+                <Typography>{invoice.bankName}</Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  Numer konta:
+                </Typography>
+                <Typography>{invoice.accountNumber}</Typography>
+              </Grid>
+            </Grid>
+  
+            <Divider sx={{ my: 1 }} />
+  
+            <Box>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>Produkty</Typography>
+            <TableContainer sx={{ mt: 2 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Nazwa produktu</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Ilość</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Kwota netto</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Stawka VAT</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Kwota VAT</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Kwota brutto</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {invoice.products.map((product, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{product.productName}</TableCell>
+                      <TableCell>{product.quantity}</TableCell>
+                      <TableCell>{parseFloat(product.netAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
+                      <TableCell>{product.vatRate}</TableCell>
+                      <TableCell>{parseFloat(product.vatAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
+                      <TableCell>{parseFloat(product.grossAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
+                    </TableRow>
+                  ))}
+                  {/* Wiersz podsumowania */}
+                  <TableRow sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
+                    <TableCell sx={{ fontWeight: 'bold' }} colSpan={2}>Razem</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>
+                      {invoice.products
+                        .reduce((sum, product) => sum + parseFloat(product.netAmount), 0)
+                        .toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+                    </TableCell>
+                    <TableCell></TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>
+                      {invoice.products
+                        .reduce((sum, product) => sum + parseFloat(product.vatAmount), 0)
+                        .toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>
+                      {invoice.products
+                        .reduce((sum, product) => sum + parseFloat(product.grossAmount), 0)
+                        .toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+          <Box id="parrent-section">
+            <Box id="summary-section" sx={{ '@media print': { display: 'none' } }}>
+              <Grid container justifyContent="space-between" sx={{ mt: 2 }}>
+                <Grid item sx={{ display: 'block' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Status:</Typography>
+                  <Typography 
+                    color={
+                      invoice.status === 1 ? 'green' : 
+                      invoice.status === 3 ? 'red' : 
+                      invoice.status === 4 ? 'grey' : 'orange'
+                    }
+                  >
+                    {invoice.status === 1 && 'Opłacona'}
+                    {invoice.status === 3 && 'Anulowana'}
+                    {invoice.status === 4 && 'Szkic'}
+                    {(invoice.status === 0 || invoice.status === 2) && 'Nieopłacona'}
+                  </Typography>
+                </Grid>
+              </Grid>
+              <Divider sx={{ my: 3 }} />
+            </Box>
+          </Box>
+          <Grid container justifyContent="space-between" sx={{ mt: 3}}>
+            <Box sx={{ width: '45%', height: 80, border: '1px solid black', textAlign: 'center', pt: 2 }}>
+              <Typography variant="subtitle2">Podpis wystawiającego</Typography>
+            </Box>
+            <Box sx={{ width: '45%', height: 80, border: '1px solid black', textAlign: 'center', pt: 2 }}>
+              <Typography variant="subtitle2">Podpis odbierającego</Typography>
+            </Box>
+          </Grid>
+        </Paper>
+      </div>
     </Box>
-    <div id="invoice-pdf">
-      <Paper elevation={4} sx={{ maxWidth: '800px', margin: 'auto', padding: 3, borderRadius: 2 }}>
-      <Typography variant="h4" align="center" sx={{ fontWeight: 'bold', mb: 1 }}>
-        Faktura VAT
-      </Typography>
-      <Typography variant="h6" align="center" sx={{ color: 'text.secondary', mb: 4 }}>
-        {invoice.number}
-      </Typography>
-
-      <Box>
-        <Grid container spacing={15}>
-          {/* Przenosimy daty nad dane sprzedawcy i kupującego */}
-          <Grid item xs={6}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              Data wystawienia:
-            </Typography>
-            <Typography>{new Date(invoice.invoiceDate).toLocaleDateString()}</Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              Data sprzedaży:
-            </Typography>
-            <Typography>{new Date(invoice.saleDate).toLocaleDateString()}</Typography>
-          </Grid>
-        </Grid>
-        
-        <Divider sx={{ my: 1 }} />
-        
-        <Grid container spacing={15}>
-          {/* Dane sprzedawcy */}
-          <Grid item xs={6}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              Sprzedawca:
-            </Typography>
-            <Typography>{invoice.sellerName}</Typography>
-            <Typography>{invoice.sellerAddress}</Typography>
-            <Typography>NIP: {invoice.sellerNIP}</Typography>
-          </Grid>
-
-          {/* Dane kupującego */}
-          <Grid item xs={6}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              Kupujący:
-            </Typography>
-            <Typography>{invoice.buyerName}</Typography>
-            <Typography>{invoice.buyerAddress}</Typography>
-            <Typography>NIP: {invoice.buyerNIP}</Typography>
-          </Grid>
-        </Grid>
-      </Box>
-
-      <Divider sx={{ my: 1 }} />
-
-      <Grid container spacing={15}>
-        <Grid item xs={6}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-            Termin płatności:
-          </Typography>
-          <Typography>{new Date(invoice.dateOfPayment).toLocaleDateString()}</Typography>
-        </Grid>
-        <Grid item xs={6}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-            Metoda płatności:
-          </Typography>
-          <Typography>{invoice.payment === 'bank_transfer' ? 'Przelew bankowy' : 'Gotówka'}</Typography>
-        </Grid>
-      </Grid>
-      <Grid container spacing={15} sx={{ display: invoice.payment === 'cash' ? 'none' : 'flex' }}>
-        <Grid item xs={6}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-            Nazwa banku:
-          </Typography>
-          <Typography>{invoice.bankName}</Typography>
-        </Grid>
-        <Grid item xs={6}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-            Numer konta:
-          </Typography>
-          <Typography>{invoice.accountNumber}</Typography>
-        </Grid>
-      </Grid>
-
-
-      <Divider sx={{ my: 1 }} />
-
-      <Box>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          Produkty
-        </Typography>
-        <TableContainer sx={{ mt: 2 }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>Nazwa produktu</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Ilość</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Kwota netto</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Stawka VAT</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Kwota VAT</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Kwota brutto</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {invoice.product.map((product, index) => (
-                <TableRow key={index}>
-                  <TableCell>{product.productName}</TableCell>
-                  <TableCell>{product.quantity}</TableCell>
-                  <TableCell>{parseFloat(product.netAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
-                  <TableCell>{product.vatRate}</TableCell>
-                  <TableCell>{parseFloat(product.vatAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
-                  <TableCell>{parseFloat(product.grossAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
-                </TableRow>
-              ))}
-              <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>Łącznie</TableCell>
-                <TableCell></TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>
-                  {parseFloat(invoice.product.reduce((acc, product) => acc + product.netAmount, 0)).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-                </TableCell>
-                <TableCell></TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>
-                  {parseFloat(invoice.product.reduce((acc, product) => acc + product.vatAmount, 0)).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-                </TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>
-                  {parseFloat(invoice.product.reduce((acc, product) => acc + product.grossAmount, 0)).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-
-      <Divider sx={{ my: 3 }} />
-
-      <Box>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          Podsumowanie
-        </Typography>
-        <Grid container justifyContent="space-between" sx={{ mt: 2 }}>
-          <Grid item>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              Status:
-            </Typography>
-            <Typography 
-              color={
-                invoice.status === 1 ? 'green' : 
-                invoice.status === 3 ? 'red' : 
-                invoice.status === 4 ? 'grey' : 
-                'orange'
-              }
-            >
-              {invoice.status === 1 && 'Opłacona'}
-              {invoice.status === 3 && 'Anulowana'}
-              {invoice.status === 4 && 'Szkic'}
-              {(invoice.status === 0 || invoice.status === 2) && 'Nieopłacona'}
-            </Typography>
-          </Grid>
-          <Grid item>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              Kwota:
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              {parseFloat(invoice.amount).toLocaleString('pl-PL', {
-                style: 'currency',
-                currency: 'PLN'
-              })}
-            </Typography>
-          </Grid>
-        </Grid>
-      </Box>
-    </Paper>
-    </div>
-  </div>
   );
 };
 

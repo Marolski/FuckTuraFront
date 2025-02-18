@@ -23,7 +23,7 @@ export default function MainPage() {
   return (
     // preview-start
     <AppProvider theme={theme}>
-        <Box
+    <Box
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -36,6 +36,7 @@ export default function MainPage() {
           marginRight: '10px',
           marginLeft: '10px'
         },
+        mt:15
       }}
     >
       <ButtonBase onClick={() => handleNavigation('/invoices')}>
@@ -55,7 +56,7 @@ export default function MainPage() {
           </Paper>
         </ButtonBase>
 
-        <ButtonBase onClick={() => handleNavigation('/register')}>
+        <ButtonBase onClick={() => handleNavigation('/clients')}>
           <Paper elevation={3} sx={{ 
                     minWidth: '100%',
                     padding: '16px', 
@@ -67,7 +68,7 @@ export default function MainPage() {
                     },
                 
                 }}>
-            <Typography variant="h6">FIRMY</Typography>
+            <Typography variant="h6">KLIENCI</Typography>
           </Paper>
         </ButtonBase>
 
@@ -83,7 +84,7 @@ export default function MainPage() {
                     },
                 
                 }}>
-            <Typography variant="h6">KLIENCI</Typography>
+            <Typography variant="h6">FIRMY</Typography>
           </Paper>
         </ButtonBase>
     </Box>

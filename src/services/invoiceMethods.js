@@ -1,6 +1,6 @@
 import { invoiceAPI, customerBusinessAPI, userBusinessAPI } from './api';
 import dayjs from 'dayjs';
-import { calculateVAT, calculateGrossAmount, calculateNetSum } from '../services/calculator';
+import { calculateVAT, calculateGrossAmount } from '../services/calculator';
 
 export const createInvoiceNumber = async (nip) => {
     try {
@@ -32,7 +32,7 @@ export const createInvoiceNumber = async (nip) => {
     }
   };
 
-export const saveInvoice = async (formData, products, draft) => {
+export const saveInvoice = async (formData, products, draft, id) => {
   const invoiceData = {
     number: formData.number,
     sellerName: formData.sellerName,
@@ -40,7 +40,7 @@ export const saveInvoice = async (formData, products, draft) => {
     sellerNip: formData.sellerNip,
     buyerName: formData.buyerName,
     buyerAddress: formData.buyerAddress,
-    buyerNip: formData.buyerNip,
+    buyerNIP: formData.buyerNIP,
     saleDate: formData.saleDate,
     invoiceDate: formData.invoiceDate,
     dateOfPayment: formData.dateOfPayment,
@@ -55,11 +55,15 @@ export const saveInvoice = async (formData, products, draft) => {
       vatAmount: parseFloat(product.vatAmount),
       grossAmount: parseFloat(product.grossAmount)
     }))};
-  console.log(invoiceData)
   if(draft) invoiceData.status = 4;
   try {
-    const response = await invoiceAPI.create(invoiceData);
-    console.log("Faktura zapisana pomyślnie:", response.data);
+    if (typeof id === 'string' && /^\d+$/.test(id)) {
+      await invoiceAPI.updateById(id, invoiceData);
+      console.log("Faktura pomyślnie zaktualizowana.");
+    } else {
+      await invoiceAPI.create(invoiceData);
+      console.log("Faktura zapisana pomyślnie.");
+    }
   } catch (error) {
     console.error("Błąd podczas zapisywania faktury:", error);
     alert("Wystąpił błąd przy zapisywaniu faktury.");
@@ -116,7 +120,7 @@ export const fetchInvoiceDetails = async (invoiceId, formData, setFormData, setP
   try {
     const invoiceResponse = await invoiceAPI.getById(invoiceId); // Assuming you have an API to fetch invoice details
     if (invoiceResponse) {
-      const { sellerName, buyerName, saleDate, invoiceDate, dateOfPayment, payment, bankName, accountNumber, product, number } = invoiceResponse;
+      const { sellerName, buyerName, buyerNIP, buyerAddress, saleDate, invoiceDate, dateOfPayment, payment, bankName, accountNumber, products, number } = invoiceResponse;
       setFormData({
         ...formData,
         sellerName,
@@ -127,9 +131,11 @@ export const fetchInvoiceDetails = async (invoiceId, formData, setFormData, setP
         payment,
         bankName,
         accountNumber,
-        number, // Assuming the invoice number is returned from the API
+        number,
+        buyerNIP,
+        buyerAddress // Assuming the invoice number is returned from the API
       });
-      setProducts(product);
+      setProducts(products);
       fetchBusinessDetails(number, setSellers, setClients, setFormData, setSelectedBusinessId);
     }
   } catch (error) {
@@ -206,7 +212,7 @@ export const handleClientChange = (value, clients, setFormData, setFormErrors) =
       ...prevData,
       buyerName: value,
       buyerAddress: selectedBuyer.address,
-      buyerNip: selectedBuyer.nip,
+      buyerNIP: selectedBuyer.nip,
 
     }));
     handleErrorChange('buyerName', setFormErrors);

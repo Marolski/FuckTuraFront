@@ -8,6 +8,7 @@ import MainPage from './components/MainPage'
 import Invoices from './components/Invoices'
 import InvoiceView from './components/InvoiceView'
 import CreateInvoice from './components/CreateInvoice'
+import Clients from './components/Clients';
 import { InvoiceProvider } from './services/context';
 
 const AppWithNavBar = () => {
@@ -26,6 +27,7 @@ const AppWithNavBar = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/createInvoice" element={<CreateInvoice />} />
         <Route path="/createInvoice/:id" element={<CreateInvoice />} />
+        <Route path="/clients" element={<Clients />} />
 
         {/* Trasy z NavBar */}
         <Route path="/home" element={<MainPage />} />
