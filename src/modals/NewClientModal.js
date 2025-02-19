@@ -63,7 +63,7 @@ const NewClientModal = ({ open, onClose, onSave, businessId, clientToEdit  }) =>
       } else {
         await customerBusinessAPI.createCustomer(businessId, clientData);
       }
-      onSave();
+      onSave(clientData);
       resetForm();
       onClose();
     } catch (err) {

@@ -50,7 +50,7 @@ function NavBar() {
         navigate('/invoices');
         break;
       case 'Firmy':
-        navigate('/companies');
+        navigate('/bussiness');
         break;
       case 'Klienci':
         navigate('/clients');

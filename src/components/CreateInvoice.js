@@ -46,7 +46,14 @@ const CreateInvoice = () => {
     setModalOpen(false); // Zamknij modal
   };
   const handleClientSave = (newClient) => {
-    setClients((prevClients) => [...prevClients, newClient]); // Dodaj nowego klienta do listy
+    setClients((prevClients) => [...prevClients, newClient]); 
+    setFormData((prevData) => ({
+      ...prevData,
+      buyerName: newClient.name,
+      buyerAddress: newClient.address,
+      buyerNIP: newClient.nip,
+
+    }));// Dodaj nowego klienta do listy
   };
   const handleClientChange = (value) => {
     const selectedBuyer = clients.find((buyer) => buyer.name === value);
@@ -62,7 +69,6 @@ const CreateInvoice = () => {
     }
   }
   const handleSave = (draft, id) => {
-    console.log(formData)
     const validationErrors = validateForm(formData, products);
     if (Object.keys(validationErrors).length > 1)
       setFormErrors(validationErrors);
@@ -87,6 +93,13 @@ const CreateInvoice = () => {
       fetchBusinessDetails(formData.number, setSellers, setClients, setFormData, setSelectedBusinessId); // If no ID, proceed with the default behavior for creating a new invoice
     }
   }, [id]); // Depend on `id` to trigger fetching invoice data
+
+  useEffect(() => {
+    // Jeśli buyerName nie znajduje się na liście klientów, ustaw go ręcznie
+    if (formData.buyerName && !clients.some(client => client.name === formData.buyerName)) {
+      setClients(prevClients => [...prevClients, { name: formData.buyerName, address: formData.buyerAddress, nip: formData.buyerNIP }]);
+    }
+  }, [formData.buyerName, clients]);
 
   return (
 <LocalizationProvider dateAdapter={AdapterDayjs}>  

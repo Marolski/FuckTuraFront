@@ -72,7 +72,7 @@ export default function MainPage() {
           </Paper>
         </ButtonBase>
 
-        <ButtonBase onClick={() => handleNavigation('/home')} >
+        <ButtonBase onClick={() => handleNavigation('/bussiness')} >
           <Paper elevation={3} sx={{ 
                     minWidth: '100%',
                     padding: '16px', 

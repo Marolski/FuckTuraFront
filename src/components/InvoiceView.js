@@ -84,8 +84,8 @@ const InvoiceDetail = () => {
   }
 
   return (
-      <Box sx={{mt: 15, width:'60%',  alignItems: 'center', mr: 'auto', ml:'auto'}}>
-        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
+    <Box sx={{ mt: 15, width: '60%', display: 'flex', flexDirection: 'column', alignItems: 'center', mx: 'auto' }}>
+        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', width:'70%' }}>
           <Button variant="contained" color="primary" onClick={() => generatePDF()}>
             Generuj PDF
           </Button>
@@ -93,8 +93,9 @@ const InvoiceDetail = () => {
             Edytuj
           </Button>
         </Box>
+  
         <div id="invoice-pdf">
-          <Paper elevation={4} sx={{ width:'100%', margin: 'auto', padding: 3, borderRadius: 2 }}>
+          <Paper elevation={4} sx={{ width: '100%', margin: 'auto', padding: 3, borderRadius: 2 }}>
             <Typography variant="h4" align="center" sx={{ fontWeight: 'bold', mb: 1 }}>
               Faktura VAT
             </Typography>
@@ -175,88 +176,90 @@ const InvoiceDetail = () => {
             <Divider sx={{ my: 1 }} />
   
             <Box>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>Produkty</Typography>
-            <TableContainer sx={{ mt: 2 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Nazwa produktu</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Ilość</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Kwota netto</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Stawka VAT</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Kwota VAT</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Kwota brutto</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {invoice.products.map((product, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{product.productName}</TableCell>
-                      <TableCell>{product.quantity}</TableCell>
-                      <TableCell>{parseFloat(product.netAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
-                      <TableCell>{product.vatRate}</TableCell>
-                      <TableCell>{parseFloat(product.vatAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
-                      <TableCell>{parseFloat(product.grossAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>Produkty</Typography>
+              <TableContainer sx={{ mt: 2 }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Nazwa produktu</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Ilość</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Kwota netto</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Stawka VAT</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Kwota VAT</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Kwota brutto</TableCell>
                     </TableRow>
-                  ))}
-                  {/* Wiersz podsumowania */}
-                  <TableRow sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
-                    <TableCell sx={{ fontWeight: 'bold' }} colSpan={2}>Razem</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>
-                      {invoice.products
-                        .reduce((sum, product) => sum + parseFloat(product.netAmount), 0)
-                        .toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-                    </TableCell>
-                    <TableCell></TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>
-                      {invoice.products
-                        .reduce((sum, product) => sum + parseFloat(product.vatAmount), 0)
-                        .toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>
-                      {invoice.products
-                        .reduce((sum, product) => sum + parseFloat(product.grossAmount), 0)
-                        .toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-          <Box id="parrent-section">
-            <Box id="summary-section" sx={{ '@media print': { display: 'none' } }}>
-              <Grid container justifyContent="space-between" sx={{ mt: 2 }}>
-                <Grid item sx={{ display: 'block' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Status:</Typography>
-                  <Typography 
-                    color={
-                      invoice.status === 1 ? 'green' : 
-                      invoice.status === 3 ? 'red' : 
-                      invoice.status === 4 ? 'grey' : 'orange'
-                    }
-                  >
-                    {invoice.status === 1 && 'Opłacona'}
-                    {invoice.status === 3 && 'Anulowana'}
-                    {invoice.status === 4 && 'Szkic'}
-                    {(invoice.status === 0 || invoice.status === 2) && 'Nieopłacona'}
-                  </Typography>
+                  </TableHead>
+                  <TableBody>
+                    {invoice.products.map((product, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{product.productName}</TableCell>
+                        <TableCell>{product.quantity}</TableCell>
+                        <TableCell>{parseFloat(product.netAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
+                        <TableCell>{product.vatRate}</TableCell>
+                        <TableCell>{parseFloat(product.vatAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
+                        <TableCell>{parseFloat(product.grossAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
+                      </TableRow>
+                    ))}
+                    {/* Wiersz podsumowania */}
+                    <TableRow sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
+                      <TableCell sx={{ fontWeight: 'bold' }} colSpan={2}>Razem</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>
+                        {invoice.products
+                          .reduce((sum, product) => sum + parseFloat(product.netAmount), 0)
+                          .toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+                      </TableCell>
+                      <TableCell></TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>
+                        {invoice.products
+                          .reduce((sum, product) => sum + parseFloat(product.vatAmount), 0)
+                          .toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>
+                        {invoice.products
+                          .reduce((sum, product) => sum + parseFloat(product.grossAmount), 0)
+                          .toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+  
+            <Box id="parrent-section">
+              <Box id="summary-section" sx={{ '@media print': { display: 'none' } }}>
+                <Grid container justifyContent="space-between" sx={{ mt: 2 }}>
+                  <Grid item sx={{ display: 'block' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Status:</Typography>
+                    <Typography 
+                      color={
+                        invoice.status === 1 ? 'green' : 
+                        invoice.status === 3 ? 'red' : 
+                        invoice.status === 4 ? 'grey' : 'orange'
+                      }
+                    >
+                      {invoice.status === 1 && 'Opłacona'}
+                      {invoice.status === 3 && 'Anulowana'}
+                      {invoice.status === 4 && 'Szkic'}
+                      {(invoice.status === 0 || invoice.status === 2) && 'Nieopłacona'}
+                    </Typography>
+                  </Grid>
                 </Grid>
-              </Grid>
-              <Divider sx={{ my: 3 }} />
+                <Divider sx={{ my: 3 }} />
+              </Box>
             </Box>
-          </Box>
-          <Grid container justifyContent="space-between" sx={{ mt: 3}}>
-            <Box sx={{ width: '45%', height: 80, border: '1px solid black', textAlign: 'center', pt: 2 }}>
-              <Typography variant="subtitle2">Podpis wystawiającego</Typography>
-            </Box>
-            <Box sx={{ width: '45%', height: 80, border: '1px solid black', textAlign: 'center', pt: 2 }}>
-              <Typography variant="subtitle2">Podpis odbierającego</Typography>
-            </Box>
-          </Grid>
-        </Paper>
-      </div>
+  
+            <Grid container justifyContent="space-between" sx={{ mt: 3 }}>
+              <Box sx={{ width: '45%', height: 80, border: '1px solid black', textAlign: 'center', pt: 2 }}>
+                <Typography variant="subtitle2">Podpis wystawiającego</Typography>
+              </Box>
+              <Box sx={{ width: '45%', height: 80, border: '1px solid black', textAlign: 'center', pt: 2 }}>
+                <Typography variant="subtitle2">Podpis odbierającego</Typography>
+              </Box>
+            </Grid>
+          </Paper>
+        </div>
     </Box>
-  );
+  );  
 };
 
 export default InvoiceDetail;
