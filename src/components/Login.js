@@ -1,34 +1,25 @@
 import * as React from 'react';
 import { AppProvider, SignInPage } from '@toolpad/core';
 import { useTheme } from '@mui/material/styles';
-import { accountAPI } from '../services/api'; // Upewnij się, że ścieżka jest poprawna
-import { Link, useNavigate  } from 'react-router-dom'; // Importujemy Link z react-router-dom
+import { accountAPI } from '../services/api';
+import { Link, useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
-import '../styles.css'; // Importuj plik CSS
+import Box from '@mui/material/Box'; // Dodano Box do responsywnego kontenera
+import '../styles.css';
 
-// preview-start
 const providers = [{ id: 'credentials', name: 'Email and Password' }];
-// preview-end
 
 const signIn = async (providers, formData, navigate) => {
   try {
-    const username = formData.get('email'); // Zakładam, że używasz 'email' jako 'username'
+    const username = formData.get('email');
     const password = formData.get('password');
 
-    // Wysłanie danych do Twojego API logowania
     const loginData = { username, password };
     const response = await accountAPI.login(loginData);
 
-    // Zalogowano pomyślnie
-    if (response.token!=null) {
-      // Serwer powinien ustawić http-only cookie z tokenem
-      // Możesz opcjonalnie przechować inne dane, jeśli to konieczne, ale bezpieczne dane w localStorage.
-
-      // Można również pobrać nazwę użytkownika z odpowiedzi lub w innym kroku
+    if (response.token != null) {
       const { userName } = response;
       console.log(`Zalogowano jako: ${userName}`);
-
-      // Nawigacja do strony domowej po zalogowaniu
       navigate('/home');
     }
 
@@ -37,29 +28,52 @@ const signIn = async (providers, formData, navigate) => {
   }
 };
 
-
 export default function CredentialsSignInPage() {
   const theme = useTheme();
   const navigate = useNavigate();
+
   return (
-    // preview-start
     <AppProvider theme={theme}>
-        <Card sx={{ minWidth: 275 }}>
-            <SignInPage 
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start', // Zmienione z 'center'
+          minHeight: '100vh',
+          padding: 2,
+          backgroundColor: '#f5f5f5',
+        }}
+      >
+        <Card
+          sx={{
+            width: '100%',
+            maxWidth: 400,
+            padding: 3,
+            boxShadow: 3,
+            borderRadius: 2,
+            backgroundColor: '#fff',
+            mt: 6, // Dodany margines od góry
+          }}
+        >
+
+          <SignInPage
             slotProps={{
-                emailField: {
-                type: "username",
-                label: "Username",
-                }
+              emailField: {
+                type: 'username',
+                label: 'Username',
+              },
             }}
             signIn={(provider, formData) => signIn(provider, formData, navigate)}
-            providers={providers} />
-                {/* Dodanie linku do strony rejestracji */}
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                <p>Nie masz konta? <Link to="/register">Zarejestruj się</Link></p>
-            </div>
+            providers={providers}
+          />
+          <Box sx={{ textAlign: 'center', marginTop: 2 }}>
+            <p>
+              Nie masz konta?{' '}
+              <Link to="/register">Zarejestruj się</Link>
+            </p>
+          </Box>
         </Card>
+      </Box>
     </AppProvider>
-    // preview-end
   );
 }

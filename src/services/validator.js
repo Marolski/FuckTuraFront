@@ -62,5 +62,76 @@ export const validateForm = (formData, products) => {
     }
     return errors;
   };
+
+  export const validateNewBusinessForm = (businessData) => {
+    let errors = {};
+  
+    // Nazwa firmy
+    if (!businessData.companyName || businessData.companyName.trim() === '') {
+      errors.companyName = 'Nazwa firmy jest obowiązkowa';
+    }
+  
+    // NIP
+    if (!businessData.nipNumber || businessData.nipNumber.trim() === '') {
+      errors.nipNumber = 'Numer NIP jest obowiązkowy';
+    } else if (businessData.nipNumber.length < 10) {
+      errors.nipNumber = 'Numer NIP musi zawierać co najmniej 10 znaków';
+    } else if (!/^[0-9]{10}$/.test(businessData.nipNumber)) {
+      errors.nipNumber = 'Numer NIP jest nieprawidłowy (powinien mieć 10 cyfr)';
+    }
+  
+    // Ulica
+    if (!businessData.street || businessData.street.trim() === '') {
+      errors.street = 'Ulica jest obowiązkowa';
+    }
+  
+    // Numer budynku
+    if (!businessData.buildingNumber || businessData.buildingNumber.trim() === '') {
+      errors.buildingNumber = 'Numer budynku jest obowiązkowy';
+    }
+  
+    // Kod pocztowy
+    if (!businessData.postalCode || businessData.postalCode.trim() === '') {
+      errors.postalCode = 'Kod pocztowy jest obowiązkowy';
+    }
+  
+    // Miasto
+    if (!businessData.city || businessData.city.trim() === '') {
+      errors.city = 'Miasto jest obowiązkowe';
+    }
+  
+    // Kraj
+    if (!businessData.country || businessData.country.trim() === '') {
+      errors.country = 'Kraj jest obowiązkowy';
+    }
+  
+    // Email
+    if (!businessData.email || businessData.email.trim() === '') {
+      errors.email = 'Email jest obowiązkowy';
+    } else if (!/^\S+@\S+\.\S+$/.test(businessData.email)) {
+      errors.email = 'Podaj poprawny adres email';
+    }
+  
+    // Telefon
+    if (!businessData.phoneNumber || businessData.phoneNumber.trim() === '') {
+      errors.phoneNumber = 'Telefon jest obowiązkowy';
+    }
+  
+    // REGON
+    if (!businessData.regon || businessData.regon.trim() === '') {
+      errors.regon = 'REGON jest obowiązkowy';
+    } else if (!/^[0-9]{9}$/.test(businessData.regon)) {
+      errors.regon = 'REGON powinien składać się z 9 cyfr';
+    }
+  
+    // Forma prawna
+    if (!businessData.legalForm || businessData.legalForm.trim() === '') {
+      errors.legalForm = 'Forma prawna jest obowiązkowa';
+    }
+  
+    return errors;
+  };
+  
+  
   
   

@@ -9,6 +9,10 @@ body, html, #root {
   overflow-x: hidden; /* Uniknięcie przewijania w poziomie */
 }
 
+table, tr, td, th {
+  page-break-inside: avoid !important;
+}
+
 /* Zapewnia odstęp od górnej belki */
 .app-container {
   flex: 1;

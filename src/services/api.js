@@ -48,7 +48,7 @@ export const accountAPI = {
 export const invoiceAPI = {
   getById: async (id) => {
     try {
-      const response = await api.get(`/api/invoice/${id}`);
+      const response = await api.get(`/api/invoice/by-id/${id}`);
       return response.data;
     } catch (error) {
       console.error('Get invoice by ID error:', error);
@@ -86,7 +86,7 @@ export const invoiceAPI = {
   },
   getByNIP: async (NIP, isBusiness) => {
     try {
-      const response = await api.get(`/api/invoice/${NIP}`, {
+      const response = await api.get(`/api/invoice/by-nip/${NIP}`, {
         params: { isBusiness },
       });
       return response.data;
@@ -247,3 +247,28 @@ export const userBusinessAPI = {
     }
   }
 };
+
+// Email API
+export const emailAPI = {
+  sendInvoice: async (toEmail, subject, body, pdfFile) => {
+    try {
+      const formData = new FormData();
+      formData.append('toEmail', toEmail);
+      formData.append('subject', subject);
+      formData.append('body', body);
+      formData.append('pdfFile', pdfFile); // pdfFile powinien być typu File (np. new File([blob], 'invoice.pdf'))
+
+      const response = await api.post('/api/email/send-invoice', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // dla przesyłania pliku
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Send invoice email error:', error);
+      throw error;
+    }
+  },
+};
+

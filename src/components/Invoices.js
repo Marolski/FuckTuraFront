@@ -1,65 +1,105 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
-  Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Checkbox, IconButton, Toolbar, Tooltip, Typography, TablePagination, TableSortLabel, ButtonBase, Menu, MenuItem
-} from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import DeleteIcon from '@mui/icons-material/Delete';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import PropTypes from 'prop-types';
-import { visuallyHidden } from '@mui/utils';
-import { invoiceAPI, userBusinessAPI } from '../services/api';
-import { mapStatusEnumToString } from '../services/enumMapper'; // Import the new mapping service
-import { parseInvoiceNumber, mapDateToDDMMYYYY } from '../services/parse'; // Import the new mapping service
-import { useNavigate } from 'react-router-dom'; // Importuj useNavigate
-import { useInvoiceContext } from '../services/context';
-import { sortByDate, sortData } from '../services/sorter';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
-import DeleteConfirmationModal from '../modals/Confiramtion';
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Checkbox,
+  IconButton,
+  Toolbar,
+  Tooltip,
+  Typography,
+  TablePagination,
+  TableSortLabel,
+  ButtonBase,
+  Menu,
+  MenuItem,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import DeleteIcon from "@mui/icons-material/Delete";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import PropTypes from "prop-types";
+import { visuallyHidden } from "@mui/utils";
+import { invoiceAPI, userBusinessAPI } from "../services/api";
+import { mapStatusEnumToString } from "../services/enumMapper"; // Import the new mapping service
+import { parseInvoiceNumber, mapDateToDDMMYYYY } from "../services/parse"; // Import the new mapping service
+import { useNavigate } from "react-router-dom"; // Importuj useNavigate
+import { useInvoiceContext } from "../services/context";
+import { sortByDate, sortData } from "../services/sorter";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import DeleteConfirmationModal from "../modals/Confiramtion";
 
 function createData(id, number, client, price, date, status, business) {
   return { id, number, client, price, date, status, business };
 }
 
 const headCells = [
-  { id: 'number', numeric: false, disablePadding: true, label: 'Numer faktury' },
-  { id: 'client', numeric: true, disablePadding: false, label: 'Klient' },
-  { id: 'business', numeric: true, disablePadding: false, label: 'Firma' },
-  { id: 'price', numeric: true, disablePadding: false, label: 'Kwota' },
-  { id: 'date', numeric: true, disablePadding: false, label: 'Data wystawienia' },
-  { id: 'status', numeric: true, disablePadding: false, label: 'Status' },
+  {
+    id: "number",
+    numeric: false,
+    disablePadding: true,
+    label: "Numer faktury",
+  },
+  { id: "client", numeric: false, disablePadding: false, label: "Klient" },
+  { id: "business", numeric: true, disablePadding: false, label: "Firma" },
+  { id: "price", numeric: false, disablePadding: false, label: "Kwota" },
+  {
+    id: "date",
+    numeric: true,
+    disablePadding: false,
+    label: "Data wystawienia",
+  },
+  { id: "status", numeric: true, disablePadding: false, label: "Status" },
 ];
 
 function CreateInvoiceButton() {
   const navigate = useNavigate();
 
   const handleNavigation = () => {
-    navigate('/createInvoice'); // Przekierowanie do ścieżki komponentu CreateInvoice
+    navigate("/createInvoice"); // Przekierowanie do ścieżki komponentu CreateInvoice
   };
 
   return (
     <ButtonBase onClick={handleNavigation}>
-      <Paper elevation={3}
+      <Paper
+        elevation={3}
         sx={{
-          minWidth: '100%',
-          padding: '16px',
-          textAlign: 'center',
-          backgroundColor: 'primary.main',
-          color: 'white',
-          '&:hover': {
-            backgroundColor: 'primary.dark', // Zmiana koloru na hover
+          minWidth: "100%",
+          padding: "16px",
+          textAlign: "center",
+          backgroundColor: "primary.main",
+          color: "white",
+          "&:hover": {
+            backgroundColor: "primary.dark", // Zmiana koloru na hover
           },
-          display: 'flex', justifyContent: 'center', mb: 2
-        }}>
+          display: "flex",
+          justifyContent: "center",
+          mb: 2,
+        }}
+      >
         <Typography variant="h6">STWÓRZ FAKTURĘ</Typography>
       </Paper>
     </ButtonBase>
   );
-};
+}
 
 function EnhancedTableHead(props) {
-  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
+  const {
+    onSelectAllClick,
+    order,
+    orderBy,
+    numSelected,
+    rowCount,
+    onRequestSort,
+    isMobile,
+  } = props;
   const createSortHandler = (property) => (event) => {
     onRequestSort(event, property);
   };
@@ -73,30 +113,39 @@ function EnhancedTableHead(props) {
             indeterminate={numSelected > 0 && numSelected < rowCount}
             checked={rowCount > 0 && numSelected === rowCount}
             onChange={onSelectAllClick}
-            inputProps={{ 'aria-label': 'zaznacz wszystkie' }}
+            inputProps={{ "aria-label": "zaznacz wszystkie" }}
           />
         </TableCell>
-        {headCells.map((headCell) => (
-          <TableCell
-            key={headCell.id}
-            align={headCell.numeric ? 'right' : 'left'}
-            padding={headCell.disablePadding ? 'none' : 'normal'}
-            sortDirection={orderBy === headCell.id ? order : false}
-          >
-            <TableSortLabel
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : 'asc'}
-              onClick={createSortHandler(headCell.id)}
+        {headCells.map((headCell) => {
+          // Ukryj kolumny na mobilnych urządzeniach
+          if (isMobile && ["business", "date", "status"].includes(headCell.id))
+            return null;
+
+          return (
+            <TableCell
+              key={headCell.id}
+              align={"left"}
+              padding={headCell.disablePadding ? "none" : "normal"}
+              sortDirection={orderBy === headCell.id ? order : false}
+              sx={{ whiteSpace: "nowrap" }}
             >
-              {headCell.label}
-              {orderBy === headCell.id ? (
-                <Box component="span" sx={visuallyHidden}>
-                  {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                </Box>
-              ) : null}
-            </TableSortLabel>
-          </TableCell>
-        ))}
+              <TableSortLabel
+                active={orderBy === headCell.id}
+                direction={orderBy === headCell.id ? order : "asc"}
+                onClick={createSortHandler(headCell.id)}
+              >
+                {headCell.label}
+                {orderBy === headCell.id ? (
+                  <Box component="span" sx={visuallyHidden}>
+                    {order === "desc"
+                      ? "sorted descending"
+                      : "sorted ascending"}
+                  </Box>
+                ) : null}
+              </TableSortLabel>
+            </TableCell>
+          );
+        })}
       </TableRow>
     </TableHead>
   );
@@ -106,9 +155,10 @@ EnhancedTableHead.propTypes = {
   numSelected: PropTypes.number.isRequired,
   onRequestSort: PropTypes.func.isRequired,
   onSelectAllClick: PropTypes.func.isRequired,
-  order: PropTypes.oneOf(['asc', 'desc']).isRequired,
+  order: PropTypes.oneOf(["asc", "desc"]).isRequired,
   orderBy: PropTypes.string.isRequired,
   rowCount: PropTypes.number.isRequired,
+  isMobile: PropTypes.bool.isRequired,
 };
 
 function EnhancedTableToolbar(props) {
@@ -120,13 +170,16 @@ function EnhancedTableToolbar(props) {
         { pl: { sm: 2 }, pr: { xs: 1, sm: 1 } },
         numSelected > 0 && {
           bgcolor: (theme) =>
-            alpha(theme.palette.primary.main, theme.palette.action.activatedOpacity),
+            alpha(
+              theme.palette.primary.main,
+              theme.palette.action.activatedOpacity
+            ),
         },
       ]}
     >
       {numSelected > 0 ? (
         <Typography
-          sx={{ flex: '1 1 100%' }}
+          sx={{ flex: "1 1 100%" }}
           color="inherit"
           variant="subtitle1"
           component="div"
@@ -135,7 +188,7 @@ function EnhancedTableToolbar(props) {
         </Typography>
       ) : (
         <Typography
-          sx={{ flex: '1 1 100%' }}
+          sx={{ flex: "1 1 100%" }}
           variant="h6"
           id="tableTitle"
           component="div"
@@ -174,27 +227,30 @@ EnhancedTableToolbar.propTypes = {
 };
 
 export default function EnhancedTable() {
-  const [order, setOrder] = useState('asc');
-  const [orderBy, setOrderBy] = useState('date');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("date");
   const [selected, setSelected] = useState([]);
   const [page, setPage] = useState(0);
   const [dense, setDense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [rows, setRows] = useState([]);
-  const navigate = useNavigate(); // Inicjalizuj useNavigate
-  const { invoiceAdded, resetInvoiceAdded } = useInvoiceContext();
+  const navigate = useNavigate(); // Inicjalizuj useNavigate;
   const [openModal, setOpenModal] = useState(false); // Stan modalu
   const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
   const [statusMenuAnchor, setStatusMenuAnchor] = useState(null); // Status menu state
+  const { invoiceAction, resetInvoiceAction, businessAdded, resetBusinessAdded } = useInvoiceContext();
+
 
   const statusOptions = [
-    { value: 0, label: 'Wystawiona' },
-    { value: 1, label: 'Opłacona' },
-    { value: 2, label: 'Nieopłacona' },
-    { value: 3, label: 'Anulowana' },
-    { value: 4, label: 'Szkic' }
+    { value: 0, label: "Wystawiona" },
+    { value: 1, label: "Opłacona" },
+    { value: 2, label: "Nieopłacona" },
+    { value: 3, label: "Anulowana" },
+    { value: 4, label: "Szkic" },
   ];
 
   const handleStatusChange = (event) => {
@@ -211,17 +267,17 @@ export default function EnhancedTable() {
         invoice.status = status;
         await invoiceAPI.updateById(invoiceId, invoice); // Call the API to update the status
 
-        const index = updatedRows.findIndex(row => row.id === invoiceId);
+        const index = updatedRows.findIndex((row) => row.id === invoiceId);
         if (index !== -1) {
           updatedRows[index].status = mapStatusEnumToString(status); // Mapa statusu do stringa
         }
         setSelected([]);
-        setSnackbarMessage('Zmieniono status faktury.');
-        setSnackbarSeverity('success');
+        setSnackbarMessage("Zmieniono status faktury.");
+        setSnackbarSeverity("success");
         setOpenSnackbar(true);
       } catch (error) {
-        setSnackbarMessage('Błąd zmiany statusu faktury.');
-        setSnackbarSeverity('error');
+        setSnackbarMessage("Błąd zmiany statusu faktury.");
+        setSnackbarSeverity("error");
         setOpenSnackbar(true);
       }
     });
@@ -229,36 +285,63 @@ export default function EnhancedTable() {
 
   useEffect(() => {
     const getByNIP = async (isBusiness) => {
-      try {
-        const busineses = await userBusinessAPI.get(); 
-        const NIPs = busineses.map((i) =>i.nipNumber);
-        const response = (await Promise.all(NIPs.map(nip => invoiceAPI.getByNIP(nip, isBusiness)))).flat();
-        const fetchedRows = response.map((invoice) =>
-          createData(invoice.id, invoice.number, invoice.buyerName, invoice.amount, mapDateToDDMMYYYY(invoice.invoiceDate), mapStatusEnumToString(invoice.status), invoice.sellerName)
-        );
-        const sortedfetchedRows = sortByDate(fetchedRows);
-        setRows(sortedfetchedRows);
-      } catch (error) {
-        console.error('Get invoice by NIP error:', error);
-      }
+        try {
+            const businesses = await userBusinessAPI.get();
+            const NIPs = businesses.map((i) => i.nipNumber);
+            const response = (
+                await Promise.all(
+                    NIPs.map((nip) => invoiceAPI.getByNIP(nip, isBusiness))
+                )
+            ).flat();
+            const fetchedRows = response.map((invoice) =>
+                createData(
+                    invoice.id,
+                    invoice.number,
+                    invoice.buyerName,
+                    invoice.amount,
+                    mapDateToDDMMYYYY(invoice.invoiceDate),
+                    mapStatusEnumToString(invoice.status),
+                    invoice.sellerName
+                )
+            );
+            const sortedFetchedRows = sortByDate(fetchedRows);
+            setRows(sortedFetchedRows);
+        } catch (error) {
+            console.error("Get invoice by NIP error:", error);
+        }
     };
-    getByNIP(true);
-    if (invoiceAdded) {
-      resetInvoiceAdded(); 
-      setSnackbarMessage('Faktura została pomyślnie dodana!');
-      setSnackbarSeverity('success');
-      setOpenSnackbar(true); // Resetujemy flagę
+
+    getByNIP(true);  // always refresh on mount
+
+    if (invoiceAction.triggered) {
+        getByNIP(true);  // refresh after invoice action
+        resetInvoiceAction();
+        setSnackbarMessage(
+            invoiceAction.wasUpdate
+                ? "Faktura została pomyślnie zaktualizowana!"
+                : "Faktura została pomyślnie dodana!"
+        );
+        setSnackbarSeverity("success");
+        setOpenSnackbar(true);
     }
-  }, [invoiceAdded, resetInvoiceAdded]);
+
+    if (businessAdded) {
+        resetBusinessAdded();
+        setSnackbarMessage("Nowa firma została dodana!");
+        setSnackbarSeverity("success");
+        setOpenSnackbar(true);
+    }
+}, [invoiceAction, resetInvoiceAction, businessAdded, resetBusinessAdded]);
+
+
 
   const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
-    const sortedRows = sortData(rows, isAsc ? 'desc' : 'asc', property);  // Sorting rows based on selected column
+    const sortedRows = sortData(rows, isAsc ? "desc" : "asc", property); // Sorting rows based on selected column
     setRows(sortedRows);
   };
-  
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
@@ -279,7 +362,10 @@ export default function EnhancedTable() {
     } else if (selectedIndex === selected.length - 1) {
       newSelected = newSelected.concat(selected.slice(0, -1));
     } else {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1)
+      );
     }
     setSelected(newSelected);
   };
@@ -306,34 +392,62 @@ export default function EnhancedTable() {
       for (const id of selected) {
         await invoiceAPI.deleteById(id); // Call the API to delete
       }
-      setRows(rows.filter(row => !selected.includes(row.id)));
-      setSnackbarMessage('Faktury zostały usunięte');
-      setSnackbarSeverity('success');
+      setRows(rows.filter((row) => !selected.includes(row.id)));
+      setSnackbarMessage("Faktury zostały usunięte");
+      setSnackbarSeverity("success");
       setOpenSnackbar(true);
       setSelected([]); // Clear selected rows
       setOpenModal(false);
     } catch (error) {
-      console.log(error)
-      setSnackbarMessage('Błąd podczas usuwania faktur');
-      setSnackbarSeverity('error');
+      console.log(error);
+      setSnackbarMessage("Błąd podczas usuwania faktur");
+      setSnackbarSeverity("error");
       setOpenSnackbar(true);
     }
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 15 }}>
-      {/* Przywrócenie przycisku i wyśrodkowanie */}
-      <CreateInvoiceButton sx={{ mb: 2, alignSelf: 'center' }} />
-  
-      <Paper sx={{ width: '60%', mb: 2, boxShadow: 3, borderRadius: 2, overflow: 'hidden' }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        mt: 10,
+        px: 2,
+        width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box", // najważniejsze dla respektowania paddingów
+      }}
+    >
+      <CreateInvoiceButton sx={{ mb: 2, alignSelf: "center" }} />
+
+      <Paper
+        sx={{
+          width: "100%",
+          maxWidth: 1200,
+          px: 1,
+          mb: 2,
+          boxShadow: 3,
+          borderRadius: 2,
+          overflow: "auto",
+        }}
+      >
         <EnhancedTableToolbar
           numSelected={selected.length}
           handleOpenModal={handleOpenModal}
           handleStatusChange={handleStatusChange}
         />
-        
+
         <TableContainer>
-          <Table sx={{ minWidth: 750 }} aria-labelledby="tableTitle" size={dense ? 'small' : 'medium'}>
+          <Table
+            sx={{
+              minWidth: 650,
+              width: "100%",
+              tableLayout: "auto",
+            }}
+            aria-labelledby="tableTitle"
+            size={dense ? "small" : "medium"}
+          >
             <EnhancedTableHead
               numSelected={selected.length}
               order={order}
@@ -341,6 +455,7 @@ export default function EnhancedTable() {
               onRequestSort={handleRequestSort}
               onSelectAllClick={handleSelectAllClick}
               rowCount={rows.length}
+              isMobile={isMobile}
             />
             <TableBody>
               {rows
@@ -351,8 +466,8 @@ export default function EnhancedTable() {
                     <TableRow
                       hover
                       onClick={(event) => {
-                        if (!event.target.closest('input'))
-                          navigate(`/invoice/${row.id}`)
+                        if (!event.target.closest("input"))
+                          navigate(`/invoice/${row.id}`);
                       }}
                       role="checkbox"
                       aria-checked={isItemSelected}
@@ -361,29 +476,56 @@ export default function EnhancedTable() {
                       selected={isItemSelected}
                       sx={{ cursor: "pointer" }}
                     >
-                      <TableCell padding="checkbox" onClick={(event) => event.stopPropagation()}>
+                      <TableCell
+                        padding="checkbox"
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         <Checkbox
                           color="primary"
                           checked={isItemSelected}
                           onChange={(event) => handleClick(event, row.id)}
-                          inputProps={{ 'aria-labelledby': `enhanced-table-checkbox-${index}` }}
+                          inputProps={{
+                            "aria-labelledby": `enhanced-table-checkbox-${index}`,
+                          }}
                         />
                       </TableCell>
-                      <TableCell component="th" id={`enhanced-table-checkbox-${index}`} scope="row" padding="none">
+                      <TableCell
+                        component="th"
+                        id={`enhanced-table-checkbox-${index}`}
+                        scope="row"
+                        padding="none"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
                         {row.number}
                       </TableCell>
-                      <TableCell align="right">{row.client}</TableCell>
-                      <TableCell align="right">{row.business}</TableCell>
-                      <TableCell align="right">{row.price}</TableCell>
-                      <TableCell align="right">{row.date}</TableCell>
-                      <TableCell align="right">{row.status}</TableCell>
+                      <TableCell align="left" sx={{ whiteSpace: "nowrap" }}>
+                        {row.client}
+                      </TableCell>
+                      {!isMobile && (
+                        <TableCell align="left" sx={{ whiteSpace: "nowrap" }}>
+                          {row.business}
+                        </TableCell>
+                      )}
+                      <TableCell align="left" sx={{ whiteSpace: "nowrap" }}>
+                        {row.price}
+                      </TableCell>
+                      {!isMobile && (
+                        <TableCell align="left" sx={{ whiteSpace: "nowrap" }}>
+                          {row.date}
+                        </TableCell>
+                      )}
+                      {!isMobile && (
+                        <TableCell align="left" sx={{ whiteSpace: "nowrap" }}>
+                          {row.status}
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
             </TableBody>
           </Table>
         </TableContainer>
-  
+
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
@@ -394,8 +536,7 @@ export default function EnhancedTable() {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </Paper>
-  
-      {/* Modal for status update */}
+
       <Menu
         anchorEl={statusMenuAnchor}
         open={Boolean(statusMenuAnchor)}
@@ -407,24 +548,26 @@ export default function EnhancedTable() {
           </MenuItem>
         ))}
       </Menu>
-  
-      {/* Modal for confirmation */}
+
       <DeleteConfirmationModal
         open={openModal}
         onClose={handleCloseModal}
         onDelete={handleDeleteSelected}
       />
-  
-      {/* Snackbar for success or error messages */}
+
       <Snackbar
         open={openSnackbar}
         autoHideDuration={6000}
         onClose={() => setOpenSnackbar(false)}
       >
-        <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
+        <Alert
+          onClose={() => setOpenSnackbar(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
           {snackbarMessage}
         </Alert>
       </Snackbar>
     </Box>
-  );  
+  );
 }

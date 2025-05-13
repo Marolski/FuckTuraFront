@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Checkbox, IconButton, Toolbar, Tooltip, Typography, TablePagination, TableSortLabel, ButtonBase, Menu, MenuItem
+  Checkbox, IconButton, Toolbar, Tooltip, Typography, TablePagination, TableSortLabel, ButtonBase
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
-import SwapHorizIcon   from '@mui/icons-material/SwapHoriz';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import PropTypes from 'prop-types';
 import { visuallyHidden } from '@mui/utils';
-import { customerAPI, customerBusinessAPI, invoiceAPI, userBusinessAPI } from '../services/api';
+import { customerAPI, customerBusinessAPI, userBusinessAPI } from '../services/api';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import NewClientModal from '../modals/NewClientModal';
 import DeleteConfirmationModal from '../modals/Confiramtion';
 import SellerSelectionModal from '../modals/SelectBusiness';
+import { useNavigate } from 'react-router-dom';
 
 function createData(id, name, address, nip) {
   return { id, name, address, nip };
@@ -44,7 +45,7 @@ function CreateClient({ handleOpenNewClientModal }) {
       </Paper>
     </ButtonBase>
   );
-};
+}
 
 function EnhancedTableHead(props) {
   const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
@@ -83,7 +84,6 @@ function EnhancedTableHead(props) {
                 </Box>
               ) : null}
             </TableSortLabel>
-
           </TableCell>
         ))}
       </TableRow>
@@ -114,21 +114,11 @@ function EnhancedTableToolbar(props) {
       ]}
     >
       {numSelected > 0 ? (
-        <Typography
-          sx={{ flex: '1 1 100%' }}
-          color="inherit"
-          variant="subtitle1"
-          component="div"
-        >
+        <Typography sx={{ flex: '1 1 100%' }} color="inherit" variant="subtitle1" component="div">
           {numSelected} wybranych
         </Typography>
       ) : (
-        <Typography
-          sx={{ flex: '1 1 100%' }}
-          variant="h6"
-          id="tableTitle"
-          component="div"
-        >
+        <Typography sx={{ flex: '1 1 100%' }} variant="h6" id="tableTitle" component="div">
           Klienci firmy {selectedBusinessName ? selectedBusinessName : '...'}
         </Typography>
       )}
@@ -141,7 +131,7 @@ function EnhancedTableToolbar(props) {
       ) : (
         <Tooltip title="Wybierz firmę">
           <IconButton onClick={handleOpenSelectClientModal}>
-            <SwapHorizIcon    />
+            <SwapHorizIcon />
           </IconButton>
         </Tooltip>
       )}
@@ -155,7 +145,6 @@ EnhancedTableToolbar.propTypes = {
   handleOpenSelectClientModal: PropTypes.func.isRequired,
   selectedBusinessName: PropTypes.string,
 };
-
 
 export default function EnhancedTable() {
   const [order, setOrder] = useState('asc');
@@ -172,15 +161,18 @@ export default function EnhancedTable() {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
-  const [openNewClientModal, setOpenNewClientModal] = useState(false); // Stan otwarcia modala
+  const [openNewClientModal, setOpenNewClientModal] = useState(false);
   const [openSelectClientModal, setOpenSelectClientModal] = useState(false);
+  const [clientAction, setClientAction] = useState(true);
+  const navigate = useNavigate();
 
-const getBusinessUser = async () =>{
+  const getBusinessUser = async () => {
     const sellerResponse = await userBusinessAPI.get();
     if (sellerResponse && sellerResponse.length > 0) {
       setSellers(sellerResponse);
-  }
-}
+    }
+  };
+
   const getClients = async (businessId) => {
     try {
       const response = await customerBusinessAPI.getByBusinessId(businessId);
@@ -192,63 +184,54 @@ const getBusinessUser = async () =>{
       console.error('Pobranie klientów zakończone błędem.', error);
     }
   };
+
   useEffect(() => {
     getBusinessUser();
-    if(!selectedBusinessId)
-      handleOpenSelectClientModal()
+    if (!selectedBusinessId) handleOpenSelectClientModal();
     if (clientAdded) {
-      setSnackbarMessage('Klient został pomyślnie dodany!');
+      if (clientAction) setSnackbarMessage('Klient został pomyślnie dodany!');
+      else setSnackbarMessage('Dane klienta zostały zmienione!');
       setSnackbarSeverity('success');
       setOpenSnackbar(true);
-      setClientAdded(false); // Reset flagi
-      getClients(selectedBusinessId); // Odśwież listę klientów
+      setClientAdded(false);
+      getClients(selectedBusinessId);
     }
   }, [clientAdded]);
 
   useEffect(() => {
     if (selectedBusinessId) {
-      getClients(selectedBusinessId); // Pobierz klientów po ustawieniu selectedBusinessId
+      getClients(selectedBusinessId);
     }
   }, [selectedBusinessId]);
 
-
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
-  
-    // Sprawdzenie typu kolumny
     const comparator = (a, b) => {
       if (typeof a[property] === 'string') {
-        return a[property].localeCompare(b[property]); // dla tekstu
+        return a[property].localeCompare(b[property]);
       }
-      return a[property] - b[property]; // dla liczb
+      return a[property] - b[property];
     };
-  
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
-  
-    // Sortowanie danych
     setRows(rows.slice().sort((a, b) => (isAsc ? comparator(a, b) : comparator(b, a))));
   };
-  
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
       const newSelecteds = rows
-        .sort((a, b) => (order === 'desc' ? b[orderBy] - a[orderBy] : a[orderBy] - b[orderBy])) // sortowanie
-        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage) // aktualna strona
+        .sort((a, b) => (order === 'desc' ? b[orderBy] - a[orderBy] : a[orderBy] - b[orderBy]))
+        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
         .map((n) => n.id);
-  
       setSelected(newSelecteds);
       return;
     }
     setSelected([]);
   };
-  
 
   const handleClick = (event, id) => {
     const selectedIndex = selected.indexOf(id);
     let newSelected = [];
-
     if (selectedIndex === -1) {
       newSelected = newSelected.concat(selected, id);
     } else if (selectedIndex === 0) {
@@ -280,7 +263,12 @@ const getBusinessUser = async () =>{
 
   const handleSelectSeller = (id) => {
     setSelectedBusinessId(id);
-    handleCloseModal();
+    setOpenSelectClientModal(false);
+  };
+
+  const handleAddNewSeller = () => {
+    setOpenSelectClientModal(false);
+    navigate('/bussiness', { state: { addingNew: true } });
   };
 
   const handleOpenSelectClientModal = () => {
@@ -294,12 +282,13 @@ const getBusinessUser = async () =>{
   const handleOpenNewClientModal = (client) => {
     setSelectedClient(client);
     setOpenNewClientModal(true);
-  }
-  const handleCloseNewClientModal = () => {
-    setOpenNewClientModal(false); 
-    setSelectedClient(null);
+  };
 
-  }
+  const handleCloseNewClientModal = () => {
+    setOpenNewClientModal(false);
+    setSelectedClient(null);
+  };
+
   const handleDeleteSelected = async () => {
     try {
       for (const id of selected) {
@@ -319,93 +308,93 @@ const getBusinessUser = async () =>{
   };
 
   const handleClickRow = (client) => {
-    handleOpenNewClientModal(client); // Otwarcie modala po kliknięciu w wiersz
+    handleOpenNewClientModal(client);
+    setClientAction(false);
   };
 
   const handleClientAdded = () => {
     setClientAdded(true);
   };
+
   const sellername = (sellers) => {
-    const selectedSeller = sellers.find(seller => seller.id === selectedBusinessId);
+    const selectedSeller = sellers.find((seller) => seller.id === selectedBusinessId);
     return selectedSeller ? selectedSeller.companyName : '...';
   };
-  return (
-    <>
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 15 }}>
-      {/* Przywrócenie przycisku i wyśrodkowanie */}
-      <CreateClient handleOpenNewClientModal={handleOpenNewClientModal}  sx={{ mb: 2, alignSelf: 'center' }}/>
-      <TableContainer component={Paper} sx={{ width: '60%', mb: 2, boxShadow: 3, borderRadius: 2, overflow: 'hidden' }}>
-      <EnhancedTableToolbar
-        numSelected={selected.length}
-        handleOpenModal={handleOpenModal}
-        handleOpenSelectClientModal={handleOpenSelectClientModal}
-        selectedBusinessName={sellername(sellers)}
-      />
 
-        <Table sx={{ minWidth: 500 }} aria-labelledby="tableTitle">
-          <EnhancedTableHead
-            order={order}
-            orderBy={orderBy}
-            onSelectAllClick={handleSelectAllClick}
-            onRequestSort={handleRequestSort}
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 10, px: 1 }}>
+      <CreateClient handleOpenNewClientModal={handleOpenNewClientModal} sx={{ mb: 2, alignSelf: 'center' }} />
+      <Paper sx={{ width: { xs: '95%', sm: '85%', md: '70%' }, mb: 2, boxShadow: 3, borderRadius: 2, overflow: 'hidden' }}>
+        <TableContainer>
+          <EnhancedTableToolbar
             numSelected={selected.length}
-            rowCount={rows.length}
+            handleOpenModal={handleOpenModal}
+            handleOpenSelectClientModal={handleOpenSelectClientModal}
+            selectedBusinessName={sellername(sellers)}
           />
-          <TableBody>
-            {rows.sort((a, b) => (order === 'desc' ? b[orderBy] - a[orderBy] : a[orderBy] - b[orderBy]))
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((row, index) => {
-                const isItemSelected = selected.indexOf(row.id) !== -1;
-                return (
-                  <TableRow
-                    hover
-                    onClick={(event) => handleClickRow(row)}
-                    role="checkbox"
-                    aria-checked={isItemSelected}
-                    tabIndex={-1}
-                    key={row.id}
-                    selected={isItemSelected}
-                  >
-                     <TableCell padding="checkbox" onClick={(event) => event.stopPropagation()}>
-                      <Checkbox
-                        checked={isItemSelected}
-                        onChange={(event) => handleClick(event, row.id)}
-                        inputProps={{ 'aria-labelledby': row.id }}
-                      />
-                    </TableCell>
-                    <TableCell align="left">{row.name}</TableCell>
-                    <TableCell align="left">{row.address}</TableCell>
-                    <TableCell align="left">{row.nip}</TableCell>
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={rows.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-      <DeleteConfirmationModal
-        open={openModal}
-        onClose={handleCloseModal}
-        onDelete={handleDeleteSelected}
-      />
+          <Table sx={{ minWidth: 500 }} aria-labelledby="tableTitle">
+            <EnhancedTableHead
+              order={order}
+              orderBy={orderBy}
+              onSelectAllClick={handleSelectAllClick}
+              onRequestSort={handleRequestSort}
+              numSelected={selected.length}
+              rowCount={rows.length}
+            />
+            <TableBody>
+              {rows
+                .sort((a, b) => (order === 'desc' ? b[orderBy] - a[orderBy] : a[orderBy] - b[orderBy]))
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((row) => {
+                  const isItemSelected = selected.indexOf(row.id) !== -1;
+                  return (
+                    <TableRow
+                      hover
+                      onClick={() => handleClickRow(row)}
+                      role="checkbox"
+                      aria-checked={isItemSelected}
+                      tabIndex={-1}
+                      key={row.id}
+                      selected={isItemSelected}
+                    >
+                      <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={isItemSelected}
+                          onChange={(event) => handleClick(event, row.id)}
+                          inputProps={{ 'aria-labelledby': row.id }}
+                        />
+                      </TableCell>
+                      <TableCell align="left">{row.name}</TableCell>
+                      <TableCell align="left">{row.address}</TableCell>
+                      <TableCell align="left">{row.nip}</TableCell>
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={rows.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      </Paper>
+
+      <DeleteConfirmationModal open={openModal} onClose={handleCloseModal} onDelete={handleDeleteSelected} />
       <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={() => setOpenSnackbar(false)}>
         <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
-      <NewClientModal 
-        open={openNewClientModal} 
-        onClose={handleCloseNewClientModal} 
-        onSave={handleClientAdded} 
-        businessId={selectedBusinessId} 
+      <NewClientModal
+        open={openNewClientModal}
+        onClose={handleCloseNewClientModal}
+        onSave={handleClientAdded}
+        businessId={selectedBusinessId}
         clientToEdit={selectedClient}
       />
       <SellerSelectionModal
@@ -413,8 +402,8 @@ const getBusinessUser = async () =>{
         sellers={sellers}
         onClose={handleCloseSelectClientModal}
         onSelectSeller={handleSelectSeller}
+        onAddNewSeller={handleAddNewSeller} // dodane przekazanie funkcji
       />
-      </Box>
-    </>
+    </Box>
   );
 }

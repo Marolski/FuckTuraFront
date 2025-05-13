@@ -32,47 +32,55 @@ export const createInvoiceNumber = async (nip) => {
     }
   };
 
-export const saveInvoice = async (formData, products, draft, id) => {
-  const invoiceData = {
-    number: formData.number,
-    sellerName: formData.sellerName,
-    sellerAddress: formData.sellerAddress,
-    sellerNip: formData.sellerNip,
-    buyerName: formData.buyerName,
-    buyerAddress: formData.buyerAddress,
-    buyerNIP: formData.buyerNIP,
-    saleDate: formData.saleDate,
-    invoiceDate: formData.invoiceDate,
-    dateOfPayment: formData.dateOfPayment,
-    payment: formData.payment,
-    bankName: formData.bankName,
-    accountNumber: formData.accountNumber,
-    products: products.map((product) => ({
-      productName: product.productName,
-      quantity: parseInt(product.quantity),
-      netAmount: parseFloat(product.netAmount),
-      vatRate: product.vatRate,
-      vatAmount: parseFloat(product.vatAmount),
-      grossAmount: parseFloat(product.grossAmount)
-    }))};
-  if(draft) invoiceData.status = 4;
-  try {
-    if (typeof id === 'string' && /^\d+$/.test(id)) {
-      await invoiceAPI.updateById(id, invoiceData);
-      console.log("Faktura pomyślnie zaktualizowana.");
-    } else {
-      await invoiceAPI.create(invoiceData);
-      console.log("Faktura zapisana pomyślnie.");
+  export const saveInvoice = async (formData, products, draft, id) => {
+    const invoiceData = {
+      number: formData.number,
+      sellerName: formData.sellerName,
+      sellerAddress: formData.sellerAddress,
+      sellerNip: formData.sellerNip,
+      buyerName: formData.buyerName,
+      buyerAddress: formData.buyerAddress,
+      buyerNIP: formData.buyerNIP,
+      saleDate: formData.saleDate,
+      invoiceDate: formData.invoiceDate,
+      dateOfPayment: formData.dateOfPayment,
+      payment: formData.payment,
+      bankName: formData.bankName,
+      accountNumber: formData.accountNumber,
+      products: products.map((product) => ({
+        productName: product.productName,
+        quantity: parseInt(product.quantity),
+        netAmount: parseFloat(product.netAmount),
+        vatRate: product.vatRate,
+        vatAmount: parseFloat(product.vatAmount),
+        grossAmount: parseFloat(product.grossAmount),
+      })),
+    };
+    if (draft) invoiceData.status = 4;
+    try {
+      if (typeof id === 'string' && /^\d+$/.test(id)) {
+        await invoiceAPI.updateById(id, invoiceData);
+        console.log("Faktura pomyślnie zaktualizowana.");
+        return true; // oznacza update
+      } else {
+        await invoiceAPI.create(invoiceData);
+        console.log("Faktura zapisana pomyślnie.");
+        return false; // oznacza nowa
+      }
+    } catch (error) {
+      console.error("Błąd podczas zapisywania faktury:", error);
+      alert("Wystąpił błąd przy zapisywaniu faktury.");
+      return false;
     }
-  } catch (error) {
-    console.error("Błąd podczas zapisywania faktury:", error);
-    alert("Wystąpił błąd przy zapisywaniu faktury.");
-  }
   };
+  
 
-export const createSellerAddress = (street, buildingNum, apartmentNum, city, postalCode, country) =>{
-  return street + " " +buildingNum + "/" + apartmentNum + ", " + postalCode + " " + city + ", " + country; 
+  export const createSellerAddress = (street, buildingNum, apartmentNum, city, postalCode, country) => {
+    console.log(apartmentNum)
+    const buildingPart = apartmentNum ? `${buildingNum}/${apartmentNum}` : buildingNum;
+    return `${street} ${buildingPart}, ${postalCode} ${city}, ${country}`;
   };
+  
 
 export const fetchClientsForSeller = async (sellerId, setClients) => {
   try {
@@ -116,59 +124,111 @@ export const fetchBusinessDetails = async (invoiceNumber, setSellers, setClients
   }
 };
 
-export const fetchInvoiceDetails = async (invoiceId, formData, setFormData, setProducts, setSellers, setClients, setSelectedBusinessId) => {
+export const fetchInvoiceDetails = async (
+  invoiceId,
+  formData,
+  setFormData,
+  setProducts,
+  setSellers,
+  setClients,
+  setSelectedBusinessId
+) => {
   try {
-    const invoiceResponse = await invoiceAPI.getById(invoiceId); // Assuming you have an API to fetch invoice details
+    const invoiceResponse = await invoiceAPI.getById(invoiceId); // Pobierz fakturę
     if (invoiceResponse) {
-      const { sellerName, buyerName, buyerNIP, buyerAddress, saleDate, invoiceDate, dateOfPayment, payment, bankName, accountNumber, products, number } = invoiceResponse;
+      const {
+        sellerName, buyerName, buyerNIP, buyerAddress,
+        saleDate, invoiceDate, dateOfPayment, payment,
+        bankName, accountNumber, products, number
+      } = invoiceResponse;
+
+      // Najpierw pobierz sprzedawców
+      const sellersResponse = await userBusinessAPI.get();
+      setSellers(sellersResponse);
+
+      // Znajdź sprzedawcę na podstawie nazwy
+      const matchedSeller = sellersResponse.find(s => s.companyName === sellerName);
+      const matchedSellerId = matchedSeller ? matchedSeller.id : '';
+
+      setSelectedBusinessId(matchedSellerId);
+
+      const sellerAddress = matchedSeller
+        ? createSellerAddress(
+            matchedSeller.street,
+            matchedSeller.buildingNumber,
+            matchedSeller.apartmentNumber,
+            matchedSeller.city,
+            matchedSeller.postalCode,
+            matchedSeller.country
+          )
+        : '';
+
+      const sellerNip = matchedSeller ? matchedSeller.nipNumber : '';
+
+      // Ustaw formData z sellerId, sellerAddress, sellerNip
       setFormData({
         ...formData,
+        sellerId: matchedSellerId,
         sellerName,
+        sellerAddress,
+        sellerNip,
         buyerName,
+        buyerAddress,
+        buyerNIP,
         saleDate: dayjs(saleDate),
         invoiceDate: dayjs(invoiceDate),
         dateOfPayment: dayjs(dateOfPayment),
         payment,
         bankName,
         accountNumber,
-        number,
-        buyerNIP,
-        buyerAddress // Assuming the invoice number is returned from the API
+        number
       });
+
       setProducts(products);
-      fetchBusinessDetails(number, setSellers, setClients, setFormData, setSelectedBusinessId);
+
+      // Pobierz klientów dla tego sprzedawcy (jeśli znaleziony)
+      if (matchedSellerId) {
+        fetchClientsForSeller(matchedSellerId, setClients);
+      }
     }
   } catch (error) {
     console.error('Błąd podczas pobierania szczegółów faktury:', error);
   }
 };
 
-export const handleSellerChange = async (value, sellers, setSelectedBusinessId, setClients, setFormData) => {
-  const selectedSeller = sellers.find((seller) => seller.companyName === value);
-  let invoiceNum = '';
-  let sellerAddress = '';
-  if (selectedSeller) {
-    setSelectedBusinessId(selectedSeller.id);
-    fetchClientsForSeller(selectedSeller.id, setClients);
-    sellerAddress = createSellerAddress(
-      selectedSeller.street,
-      selectedSeller.buildingNumber,
-      selectedSeller.apartmentNumber,
-      selectedSeller.city,
-      selectedSeller.postalCode,
-      selectedSeller.country
-    );
-    invoiceNum = await createInvoiceNumber(selectedSeller.nipNumber);
+
+export const handleSellerChange = async (sellerId, sellers, setSelectedBusinessId, setClients, setFormData) => {
+  const selectedSeller = sellers.find((seller) => seller.id === sellerId);
+  if (!selectedSeller) {
+    console.error('Nie znaleziono sprzedawcy o podanym ID');
+    return;
   }
+
+  let invoiceNum = '';
+  let sellerAddress = createSellerAddress(
+    selectedSeller.street,
+    selectedSeller.buildingNumber,
+    selectedSeller.apartmentNumber,
+    selectedSeller.city,
+    selectedSeller.postalCode,
+    selectedSeller.country
+  );
+
+  setSelectedBusinessId(selectedSeller.id);
+  fetchClientsForSeller(selectedSeller.id, setClients);
+  invoiceNum = await createInvoiceNumber(selectedSeller.nipNumber);
+
   setFormData((prevData) => ({
     ...prevData,
-    sellerName: value,
+    sellerId: selectedSeller.id,
+    sellerName: selectedSeller.companyName,
     sellerAddress: sellerAddress,
     sellerNip: selectedSeller.nipNumber,
     buyerName: '',
     number: invoiceNum
   }));
 };
+
 
 export const handleErrorChange = (name, setFormErrors) =>{
   setFormErrors((prevErrors) => {

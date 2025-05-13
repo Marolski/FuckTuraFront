@@ -1,15 +1,23 @@
-export const calculateVAT = (netAmount, vatRate, quantity) => {
-    if (!netAmount || !vatRate || !quantity) return 0;
-    const vatValue = (parseFloat(netAmount) * (parseFloat(vatRate) / 100)) * quantity;
-    return vatValue;
-  };
-export const calculateGrossAmount = (netAmount, vatAmount, quantity) => {
-    if (!netAmount || !quantity) return 0;
-    const grossValue = (parseFloat(netAmount)* quantity) + parseFloat(vatAmount);
-    return grossValue;
-  };
+export const roundTwoDecimals = (value) => {
+  return Math.round(value * 100) / 100;
+};
+
+
 export const calculateNetSum = (netAmount, quantity) => {
-    if (!netAmount || !quantity) return 0;
-    const sumNet = parseFloat(netAmount) * parseFloat(quantity);
-    return sumNet;
-  }; 
+  const result = parseFloat(netAmount) * parseFloat(quantity);
+  return roundTwoDecimals(result);
+};
+
+export const calculateVAT = (netAmount, vatRate, quantity) => {
+  const netSum = calculateNetSum(netAmount, quantity);
+  const vatPercentage = parseFloat(vatRate.replace('%', '')) / 100;
+  const result = netSum * vatPercentage;
+  return roundTwoDecimals(result);
+};
+
+export const calculateGrossAmount = (netAmount, vatAmount, quantity) => {
+  const netSum = calculateNetSum(netAmount, quantity);
+  const vat = parseFloat(vatAmount);
+  const result = netSum + vat;
+  return roundTwoDecimals(result);
+};

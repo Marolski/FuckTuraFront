@@ -26,7 +26,6 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const { email, password, repeatPassword, username } = registerData;
-    console.log(registerData)
     if (password !== repeatPassword) {
       setError('Passwords do not match');
       return;

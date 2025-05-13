@@ -7,18 +7,40 @@ export const useInvoiceContext = () => {
 };
 
 export const InvoiceProvider = ({ children }) => {
-  const [invoiceAdded, setInvoiceAdded] = useState(false);
+  const [invoiceAction, setInvoiceAction] = useState({
+    triggered: false,
+    wasUpdate: false,
+  });
 
-  const markInvoiceAsAdded = () => {
-    setInvoiceAdded(true);
+  const [businessAdded, setBusinessAdded] = useState(false);
+
+  const markInvoiceAsAdded = (wasUpdate = false) => {
+    setInvoiceAction({ triggered: true, wasUpdate });
   };
 
-  const resetInvoiceAdded = () => {
-    setInvoiceAdded(false);
+  const resetInvoiceAction = () => {
+    setInvoiceAction({ triggered: false, wasUpdate: false });
+  };
+
+  const markBusinessAsAdded = () => {
+    setBusinessAdded(true);
+  };
+
+  const resetBusinessAdded = () => {
+    setBusinessAdded(false);
   };
 
   return (
-    <InvoiceContext.Provider value={{ invoiceAdded, markInvoiceAsAdded, resetInvoiceAdded }}>
+    <InvoiceContext.Provider
+      value={{
+        invoiceAction,
+        markInvoiceAsAdded,
+        resetInvoiceAction,
+        businessAdded,
+        markBusinessAsAdded,
+        resetBusinessAdded,
+      }}
+    >
       {children}
     </InvoiceContext.Provider>
   );

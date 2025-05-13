@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
-import { Modal, Box, Button, Typography,Grid  } from '@mui/material';
+import { Modal, Box, Button, Typography, Grid } from '@mui/material';
 
-function SellerSelectionModal({ open, sellers, onClose, onSelectSeller }) {
+function SellerSelectionModal({ open, sellers, onClose, onSelectSeller, onAddNewSeller }) {
   const [selectedId, setSelectedId] = useState(null);
 
   const handleSelectSeller = (id) => {
     setSelectedId(id);
-    onSelectSeller(id); // Wywołaj funkcję callback do rodzica z wybranym id
-    onClose(); // Zamknij modal po wybraniu
+    onSelectSeller(id);
+    onClose(); // zamyka modal tylko przy wyborze
+  };
+
+  const handleAddSeller = () => {
+    onAddNewSeller();
+    onClose(); // zamyka modal tylko przy dodawaniu
   };
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={() => {}} // blokujemy zamknięcie kliknięciem poza modal
+      disableEscapeKeyDown // blokujemy zamknięcie klawiszem Esc
       aria-labelledby="seller-selection-modal"
-      aria-describedby="modal-do wyboru firmy"
+      aria-describedby="modal-do-wyboru-firmy"
     >
       <Box
         sx={{
@@ -30,24 +36,24 @@ function SellerSelectionModal({ open, sellers, onClose, onSelectSeller }) {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          width: '80%', // Ustawienie szerokości, by przyciski były szersze
-          maxWidth: 600, // Maksymalna szerokość
+          width: '80%',
+          maxWidth: 600,
         }}
       >
         <Typography variant="h6" sx={{ mb: 2 }}>
           Wybierz firmę
         </Typography>
         {sellers.length === 0 ? (
-          <Typography>Brak dostępnych firm.</Typography>
+          <Typography sx={{ mb: 2 }}>Brak dostępnych firm.</Typography>
         ) : (
-          <Grid container spacing={2} justifyContent="center">
+          <Grid container spacing={2} justifyContent="center" sx={{ mb: 2 }}>
             {sellers.map((seller) => (
-              <Grid item xs={12} sm={6} md={4} key={seller.id}> {/* Ustalamy liczbę przycisków w rzędzie */}
+              <Grid item xs={12} sm={6} md={4} key={seller.id}>
                 <Button
                   variant="contained"
                   color="primary"
                   fullWidth
-                  sx={{ height: 56 }} // Większe przyciski
+                  sx={{ height: 56 }}
                   onClick={() => handleSelectSeller(seller.id)}
                 >
                   {seller.companyName}
@@ -56,6 +62,15 @@ function SellerSelectionModal({ open, sellers, onClose, onSelectSeller }) {
             ))}
           </Grid>
         )}
+        <Button
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ mt: 2 }}
+          onClick={handleAddSeller}
+        >
+          Dodaj firmę
+        </Button>
       </Box>
     </Modal>
   );
