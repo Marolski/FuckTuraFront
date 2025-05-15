@@ -1,14 +1,13 @@
 import {
   Typography, Grid, Divider, Box, Paper,
   TableContainer, Table, TableCell, TableBody, TableHead,
-  TableRow, Menu, MenuItem, IconButton
+  TableRow, Menu, MenuItem, IconButton, Snackbar, Alert
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import React, { useEffect, useState } from 'react';
-import { invoiceAPI } from '../services/api';
+import { invoiceAPI, emailAPI } from '../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
-import { emailAPI } from '../services/api';
 
 const insertLineBreaksEveryThreeWords = (text) => {
   if (!text) return '';
@@ -28,51 +27,76 @@ const InvoiceDetail = () => {
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleMenuClick = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('info');
+  const [snackbarAutoHide, setSnackbarAutoHide] = useState(true);
+
+  const showSnackbar = (message, severity = 'info', autoHide = true) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarAutoHide(autoHide);
+    setSnackbarOpen(true);
   };
-  const handleMenuClose = () => {
-    setAnchorEl(null);
+
+  const applyPDFCleanStyles = () => {
+    const element = document.getElementById('invoice-pdf');
+    if (element) element.classList.add('pdf-mode');
+  };
+
+  const removePDFCleanStyles = () => {
+    const element = document.getElementById('invoice-pdf');
+    if (element) element.classList.remove('pdf-mode');
   };
 
   const handleSendEmail = async () => {
-      try {
-          const email = 'mbrzoska303@gmail.com'; // <-- tu podmień na dynamiczny adres, np. invoice.buyerEmail
-          const subject = `Faktura ${invoice.number}`;
-          const body = 'Dziękujemy za współpracę! W załączniku przesyłamy fakturę.';
-
-          // Zakładamy, że masz pdfBlob wygenerowany z html2pdf
-          const element = document.getElementById('invoice-pdf');
-          const pdfBlob = await html2pdf().from(element).outputPdf('blob');
-
-          await emailAPI.sendInvoice(email, subject, body, new File([pdfBlob], 'invoice.pdf', { type: 'application/pdf' }));
-
-          alert('Mail został wysłany!');
-      } catch (error) {
-          console.error('Błąd przy wysyłaniu maila:', error);
-          alert('Nie udało się wysłać maila.');
-      }
+    showSnackbar('Trwa wysyłka faktury...', 'info', false);
+    try {
+      const email = 'mbrzoska303@gmail.com';
+      const subject = `Faktura ${invoice.number}`;
+      const body = 'Dziękujemy za współpracę! W załączniku przesyłamy fakturę.';
+  
+      const element = document.getElementById('invoice-pdf');
+      if (!element) return;
+  
+      applyPDFCleanStyles();
+  
+      // ⛔️ ukryj sekcję statusu przed wygenerowaniem
+      const statusElement = document.querySelector('.hide-in-email');
+      if (statusElement) statusElement.setAttribute('style', 'display: none');
+  
+      const pdfBlob = await html2pdf().from(element).outputPdf('blob');
+  
+      // ✅ przywróć status po renderze
+      if (statusElement) statusElement.setAttribute('style', 'display: block');
+      removePDFCleanStyles();
+  
+      await emailAPI.sendInvoice(
+        email,
+        subject,
+        body,
+        new File([pdfBlob], 'invoice.pdf', { type: 'application/pdf' })
+      );
+  
+      showSnackbar('E-mail został wysłany!', 'success', true);
+    } catch (error) {
+      console.error('Błąd przy wysyłaniu maila:', error);
+      showSnackbar('Nie udało się wysłać e-maila.', 'error', true);
+    }
   };
-
-
-  useEffect(() => {
-    const fetchInvoiceDetails = async () => {
-      try {
-        const response = await invoiceAPI.getById(id);
-        setInvoice(response);
-      } catch (error) {
-        console.error('Error fetching invoice details:', error);
-      }
-    };
-    fetchInvoiceDetails();
-  }, [id]);
+  
 
   const generatePDF = () => {
     const element = document.getElementById('invoice-pdf');
     const summarySection = document.getElementById('summary-section');
 
-    // Ukryj sekcję podczas generowania PDF
+    if (!element) return;
+
     if (summarySection) summarySection.style.display = 'none';
+    applyPDFCleanStyles();
 
     const options = {
       margin: 0.5,
@@ -87,12 +111,24 @@ const InvoiceDetail = () => {
       .from(element)
       .save()
       .then(() => {
-        // Przywróć sekcję po wygenerowaniu PDF
         if (summarySection) summarySection.style.display = 'block';
+        removePDFCleanStyles();
       });
 
     handleMenuClose();
   };
+
+  useEffect(() => {
+    const fetchInvoiceDetails = async () => {
+      try {
+        const response = await invoiceAPI.getById(id);
+        setInvoice(response);
+      } catch (error) {
+        console.error('Error fetching invoice details:', error);
+      }
+    };
+    fetchInvoiceDetails();
+  }, [id]);
 
   if (!invoice) {
     return <Typography align="center" mt={10}>Ładowanie szczegółów faktury...</Typography>;
@@ -105,7 +141,6 @@ const InvoiceDetail = () => {
   return (
     <Box sx={{ mt: { xs: 8, md: 15 }, px: 2, width: '100%', boxSizing: 'border-box', display: 'flex', justifyContent: 'center' }}>
       <Box sx={{ position: 'relative', width: '100%', maxWidth: 900 }}>
-        {/* Ikona menu w rogu */}
         <IconButton
           aria-label="więcej"
           aria-controls={open ? 'actions-menu' : undefined}
@@ -116,28 +151,37 @@ const InvoiceDetail = () => {
         >
           <MoreVertIcon />
         </IconButton>
-        <Menu
-          id="actions-menu"
-          anchorEl={anchorEl}
-          open={open}
-          onClose={handleMenuClose}
-        >
+        <Menu id="actions-menu" anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
           <MenuItem onClick={generatePDF}>Generuj PDF</MenuItem>
           <MenuItem onClick={() => { navigate(`/createInvoice/${id}`); handleMenuClose(); }}>Edytuj</MenuItem>
           <MenuItem onClick={() => { handleSendEmail(); handleMenuClose(); }}>Wyślij na email</MenuItem>
-
         </Menu>
 
-        {/* Faktura */}
-        <Paper id="invoice-pdf" elevation={4} sx={{ p: { xs: 2, md: 4 }, borderRadius: 2, width: '100%', boxSizing: 'border-box', overflowX: 'auto' }}>
-          <Typography variant="h4" align="center" sx={{ fontWeight: 'bold', mb: 1 }}>
-            Faktura VAT
-          </Typography>
-          <Typography variant="h6" align="center" sx={{ color: 'text.secondary', mb: 4 }}>
-            {invoice.number}
-          </Typography>
+        <Paper
+          id="invoice-pdf"
+          elevation={4}
+          sx={{
+            p: { xs: 2, md: 4 },
+            borderRadius: 2,
+            width: '100%',
+            boxSizing: 'border-box',
+            overflowX: 'auto',
+            backgroundColor: 'white'
+          }}
+        >
+          <style>
+            {`
+              #invoice-pdf.pdf-mode {
+                background: white !important;
+                box-shadow: none !important;
+                -webkit-box-shadow: none !important;
+              }
+            `}
+          </style>
 
-          {/* Data wystawienia i Data sprzedaży obok siebie */}
+          <Typography variant="h4" align="center" sx={{ fontWeight: 'bold', mb: 1 }}>Faktura VAT</Typography>
+          <Typography variant="h6" align="center" sx={{ color: 'text.secondary', mb: 4 }}>{invoice.number}</Typography>
+
           <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', mb: 2 }}>
             <Box sx={{ width: '48%' }}>
               <Typography variant="subtitle1" fontWeight="bold">Data wystawienia:</Typography>
@@ -151,29 +195,23 @@ const InvoiceDetail = () => {
 
           <Divider sx={{ my: 2 }} />
 
-          {/* Sprzedawca i Kupujący obok siebie */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', mb: 2 }}>
             <Box sx={{ width: '48%' }}>
               <Typography variant="subtitle1" fontWeight="bold">Sprzedawca:</Typography>
               <Typography>{invoice.sellerName}</Typography>
-              {invoice.sellerAddress && invoice.sellerAddress !== 'null' && invoice.sellerAddress !== '' && (
-                <Typography>{invoice.sellerAddress}</Typography>
-              )}
+              {invoice.sellerAddress && <Typography>{invoice.sellerAddress}</Typography>}
               <Typography>NIP: {invoice.sellerNIP}</Typography>
             </Box>
             <Box sx={{ width: '48%' }}>
               <Typography variant="subtitle1" fontWeight="bold">Kupujący:</Typography>
               <Typography>{invoice.buyerName}</Typography>
-              {invoice.buyerAddress && invoice.buyerAddress !== 'null' && invoice.buyerAddress !== '' && (
-                <Typography>{invoice.buyerAddress}</Typography>
-              )}
+              {invoice.buyerAddress && <Typography>{invoice.buyerAddress}</Typography>}
               <Typography>NIP: {invoice.buyerNIP}</Typography>
             </Box>
           </Box>
 
           <Divider sx={{ my: 2 }} />
 
-          {/* Termin płatności i Metoda płatności obok siebie */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', mb: 2 }}>
             <Box sx={{ width: '48%' }}>
               <Typography variant="subtitle1" fontWeight="bold">Termin płatności:</Typography>
@@ -201,61 +239,52 @@ const InvoiceDetail = () => {
             </>
           )}
 
-
           <Divider sx={{ my: 2 }} />
 
-          <Box>
-            <Typography variant="h6" fontWeight="bold" color="primary.main">Produkty</Typography>
-            <TableContainer sx={{ mt: 2 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Nazwa produktu</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Ilość</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Kwota netto</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Stawka VAT</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Kwota VAT</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Kwota brutto</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {invoice.products.map((product, i) => (
-                    <TableRow key={i}>
-                      <TableCell sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxWidth: '200px' }}>
-                        {insertLineBreaksEveryThreeWords(product.productName)}
-                      </TableCell>
-                      <TableCell align="right">{product.quantity}</TableCell>
-                      <TableCell align="right">
-                        {parseFloat(product.netAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-                      </TableCell>
-                      <TableCell align="right">{product.vatRate}</TableCell>
-                      <TableCell align="right">
-                        {parseFloat(product.vatAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-                      </TableCell>
-                      <TableCell align="right">
-                        {parseFloat(product.grossAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
-                    <TableCell colSpan={2}>Razem</TableCell>
-                    <TableCell align="right">
-                      {totalNet.toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+          <Typography variant="h6" fontWeight="bold" color="primary.main">Produkty</Typography>
+          <TableContainer sx={{ mt: 2 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Nazwa produktu</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Ilość</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Kwota netto</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Stawka VAT</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Kwota VAT</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Kwota brutto</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {invoice.products.map((product, i) => (
+                  <TableRow key={i}>
+                    <TableCell sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxWidth: '200px' }}>
+                      {insertLineBreaksEveryThreeWords(product.productName)}
                     </TableCell>
-                    <TableCell />
+                    <TableCell align="right">{product.quantity}</TableCell>
                     <TableCell align="right">
-                      {totalVat.toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+                      {parseFloat(product.netAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+                    </TableCell>
+                    <TableCell align="right">{product.vatRate}</TableCell>
+                    <TableCell align="right">
+                      {parseFloat(product.vatAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
                     </TableCell>
                     <TableCell align="right">
-                      {totalGross.toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
+                      {parseFloat(product.grossAmount).toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}
                     </TableCell>
                   </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
+                ))}
+                <TableRow sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>
+                  <TableCell colSpan={2}>Razem</TableCell>
+                  <TableCell align="right">{totalNet.toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
+                  <TableCell />
+                  <TableCell align="right">{totalVat.toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
+                  <TableCell align="right">{totalGross.toLocaleString('pl-PL', { style: 'currency', currency: 'PLN' })}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-          <Box id="summary-section" sx={{ mt: 3 }}>
+          <Box id="summary-section" className="hide-in-email" sx={{ mt: 3 }}>
             <Typography variant="subtitle1" fontWeight="bold">Status:</Typography>
             <Typography
               color={
@@ -281,6 +310,20 @@ const InvoiceDetail = () => {
             </Box>
           </Box>
         </Paper>
+
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={snackbarAutoHide ? 6000 : null}
+          onClose={() => setSnackbarOpen(false)}
+        >
+          <Alert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarSeverity}
+            sx={{ width: '100%' }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
       </Box>
     </Box>
   );
