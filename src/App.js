@@ -37,7 +37,7 @@ const AppWithNavBar = () => {
         <Route path="/bussiness" element={<Businesses />} />
 
         {/* Domyślna trasa */}
-        <Route path="/" element={<h1>Witamy w aplikacji!</h1>} />
+        <Route path="/login" element={<h1>Witamy w aplikacji!</h1>} />
       </Routes>
     </>
   );
