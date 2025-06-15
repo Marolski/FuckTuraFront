@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5074'; // Zmień na właściwy URL swojego API
+const API_BASE_URL = 'https://api.fucktura.spot-finder.app'; // Zmień na właściwy URL swojego API
 
 // Tworzymy instancję Axios
 const api = axios.create({
