@@ -76,7 +76,6 @@ export const createInvoiceNumber = async (nip) => {
   
 
   export const createSellerAddress = (street, buildingNum, apartmentNum, city, postalCode, country) => {
-    console.log(apartmentNum)
     const buildingPart = apartmentNum ? `${buildingNum}/${apartmentNum}` : buildingNum;
     return `${street} ${buildingPart}, ${postalCode} ${city}, ${country}`;
   };
@@ -225,6 +224,8 @@ export const handleSellerChange = async (sellerId, sellers, setSelectedBusinessI
     sellerAddress: sellerAddress,
     sellerNip: selectedSeller.nipNumber,
     buyerName: '',
+    accountNumber: selectedSeller.accountNumber,
+    bankName: selectedSeller.bankName,
     number: invoiceNum
   }));
 };

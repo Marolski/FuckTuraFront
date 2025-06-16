@@ -75,6 +75,7 @@ const NewClientModal = ({ open, onClose, onSave, businessId, clientToEdit }) => 
 
   const handleCancel = () => {
     resetForm();
+    setErrors({});
     onClose();
   };
 

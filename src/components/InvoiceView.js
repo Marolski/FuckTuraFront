@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { invoiceAPI, emailAPI } from '../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
+import dayjs from 'dayjs';
 
 const insertLineBreaksEveryThreeWords = (text) => {
   if (!text) return '';
@@ -58,36 +59,33 @@ const InvoiceDetail = () => {
       const email = 'mbrzoska303@gmail.com';
       const subject = `Faktura ${invoice.number}`;
       const body = 'Dziękujemy za współpracę! W załączniku przesyłamy fakturę.';
-  
+
       const element = document.getElementById('invoice-pdf');
       if (!element) return;
-  
+
       applyPDFCleanStyles();
-  
-      // ⛔️ ukryj sekcję statusu przed wygenerowaniem
+
       const statusElement = document.querySelector('.hide-in-email');
       if (statusElement) statusElement.setAttribute('style', 'display: none');
-  
+
       const pdfBlob = await html2pdf().from(element).outputPdf('blob');
-  
-      // ✅ przywróć status po renderze
+
       if (statusElement) statusElement.setAttribute('style', 'display: block');
       removePDFCleanStyles();
-  
+
       await emailAPI.sendInvoice(
         email,
         subject,
         body,
         new File([pdfBlob], 'invoice.pdf', { type: 'application/pdf' })
       );
-  
+
       showSnackbar('E-mail został wysłany!', 'success', true);
     } catch (error) {
       console.error('Błąd przy wysyłaniu maila:', error);
       showSnackbar('Nie udało się wysłać e-maila.', 'error', true);
     }
   };
-  
 
   const generatePDF = () => {
     const element = document.getElementById('invoice-pdf');
@@ -139,24 +137,43 @@ const InvoiceDetail = () => {
   const totalGross = invoice.products.reduce((sum, p) => sum + parseFloat(p.grossAmount), 0);
 
   return (
-    <Box sx={{ mt: { xs: 8, md: 15 }, px: 2, width: '100%', boxSizing: 'border-box', display: 'flex', justifyContent: 'center' }}>
-      <Box sx={{ position: 'relative', width: '100%', maxWidth: 900 }}>
-        <IconButton
-          aria-label="więcej"
-          aria-controls={open ? 'actions-menu' : undefined}
-          aria-haspopup="true"
-          aria-expanded={open ? 'true' : undefined}
-          onClick={handleMenuClick}
-          sx={{ position: 'absolute', top: 8, right: 8 }}
-        >
-          <MoreVertIcon />
-        </IconButton>
-        <Menu id="actions-menu" anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
-          <MenuItem onClick={generatePDF}>Generuj PDF</MenuItem>
-          <MenuItem onClick={() => { navigate(`/createInvoice/${id}`); handleMenuClose(); }}>Edytuj</MenuItem>
-          <MenuItem onClick={() => { handleSendEmail(); handleMenuClose(); }}>Wyślij na email</MenuItem>
-        </Menu>
+    <Box sx={{ mt: { xs: 8, md: 15 }, px: 2, width: '100%', boxSizing: 'border-box' }}>
+      {/* Wrapper z pozycjonowanym przyciskiem i fakturą obok */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
 
+      <Menu id="actions-menu" anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
+        <MenuItem onClick={generatePDF}>Generuj PDF</MenuItem>
+        <MenuItem onClick={() => { navigate(`/createInvoice/${id}`); handleMenuClose(); }}>Edytuj</MenuItem>
+        <MenuItem onClick={() => { handleSendEmail(); handleMenuClose(); }}>Wyślij na email</MenuItem>
+        <MenuItem
+          onClick={() => {
+            const copiedInvoice = {
+              sellerId: invoice.sellerId,
+              sellerName: invoice.sellerName,
+              sellerAddress: invoice.sellerAddress,
+              sellerNip: invoice.sellerNip,
+              buyerName: invoice.buyerName,
+              buyerAddress: invoice.buyerAddress,
+              buyerNIP: invoice.buyerNIP,
+              payment: invoice.payment,
+              bankName: invoice.bankName,
+              accountNumber: invoice.accountNumber,
+              products: invoice.products,
+              invoiceDate: dayjs(),
+              saleDate: dayjs(),
+              dateOfPayment: dayjs(),
+              number: '',
+            };
+            navigate('/createInvoice', { state: { copiedInvoice } });
+            handleMenuClose();
+          }}
+        >
+          Kopiuj fakturę
+        </MenuItem>
+
+      </Menu>
+
+      <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto' }}>
         <Paper
           id="invoice-pdf"
           elevation={4}
@@ -164,20 +181,35 @@ const InvoiceDetail = () => {
             p: { xs: 2, md: 4 },
             borderRadius: 2,
             width: '100%',
-            boxSizing: 'border-box',
+            maxWidth: 900,
+            backgroundColor: 'white',
             overflowX: 'auto',
-            backgroundColor: 'white'
+            mx: 'auto'
           }}
         >
-          <style>
-            {`
-              #invoice-pdf.pdf-mode {
-                background: white !important;
-                box-shadow: none !important;
-                -webkit-box-shadow: none !important;
-              }
-            `}
-          </style>
+          <Box className="hide-in-pdf" sx={{ position: 'absolute', top: 8, right: 8 }}>
+            <IconButton
+              aria-label="więcej"
+              aria-controls={open ? 'actions-menu' : undefined}
+              aria-haspopup="true"
+              aria-expanded={open ? 'true' : undefined}
+              onClick={handleMenuClick}
+            >
+              <MoreVertIcon />
+            </IconButton>
+          </Box>
+            <style>
+              {`
+                #invoice-pdf.pdf-mode {
+                  background: white !important;
+                  box-shadow: none !important;
+                  -webkit-box-shadow: none !important;
+                }
+                #invoice-pdf.pdf-mode .hide-in-pdf {
+                  display: none !important;
+                }
+              `}
+            </style>
 
           <Typography variant="h4" align="center" sx={{ fontWeight: 'bold', mb: 1 }}>Faktura VAT</Typography>
           <Typography variant="h6" align="center" sx={{ color: 'text.secondary', mb: 4 }}>{invoice.number}</Typography>
@@ -310,21 +342,22 @@ const InvoiceDetail = () => {
             </Box>
           </Box>
         </Paper>
-
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={snackbarAutoHide ? 6000 : null}
-          onClose={() => setSnackbarOpen(false)}
-        >
-          <Alert
-            onClose={() => setSnackbarOpen(false)}
-            severity={snackbarSeverity}
-            sx={{ width: '100%' }}
-          >
-            {snackbarMessage}
-          </Alert>
-        </Snackbar>
       </Box>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={snackbarAutoHide ? 6000 : null}
+        onClose={() => setSnackbarOpen(false)}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </Box>
     </Box>
   );
 };

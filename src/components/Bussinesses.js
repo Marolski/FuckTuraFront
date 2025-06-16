@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Paper, Typography, TextField, Button, Toolbar, IconButton, Snackbar, Alert
+  Box, Paper, Typography, TextField, Button, Toolbar, IconButton,
+  Snackbar, Alert, FormControlLabel, Checkbox
 } from '@mui/material';
 import { businessAPI, userBusinessAPI } from '../services/api';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -59,6 +60,9 @@ function Businesses() {
       website: '',
       legalForm: '',
       notes: '',
+      accountNumber: '',
+      bankName: '',
+      sendReminderEmails: true,
     });
     setIsNewBusiness(true);
     setFormErrors({});
@@ -71,8 +75,12 @@ function Businesses() {
     setFormErrors({ ...formErrors, [name]: '' });
   };
 
+  const handleCheckboxChange = (e) => {
+    setBusinessData({ ...businessData, sendReminderEmails: e.target.checked });
+  };
+
   const handleSaveChanges = async () => {
-    if (isNewBusiness) {
+    console.log("aaaaa")
       const errors = validateNewBusinessForm(businessData);
       if (Object.keys(errors).length > 0) {
         setFormErrors(errors);
@@ -80,21 +88,12 @@ function Businesses() {
         setSnackbarSeverity('error');
         setSnackbarOpen(true);
         return;
-      }
     }
 
     try {
       if (isNewBusiness) {
-        // 1️⃣ Utwórz firmę w głównym business API
-        //await businessAPI.create(businessData);
-
-        // 2️⃣ Dodaj firmę do userBusinessAPI z tymi samymi danymi
         await userBusinessAPI.create(businessData);
-
-        // 3️⃣ Pobierz świeżą listę firm
         await fetchBusinesses();
-
-        // 4️⃣ Pokaż sukces i przekieruj
         setSnackbarMessage('Nowa firma została dodana!');
         setSnackbarSeverity('success');
         setSnackbarOpen(true);
@@ -126,7 +125,6 @@ function Businesses() {
       setOpenSelectBusinessModal(true);
     }
   }, [businesses, selectedBusiness, addingNew]);
-  
 
   useEffect(() => {
     fetchBusinesses();
@@ -146,7 +144,8 @@ function Businesses() {
     { label: 'REGON', name: 'regon' },
     { label: 'Strona WWW', name: 'website' },
     { label: 'Forma prawna', name: 'legalForm' },
-    { label: 'Uwagi', name: 'notes', multiline: true, rows: 4 },
+    { label: 'Numer konta', name: 'accountNumber' },
+    { label: 'Nazwa banku', name: 'bankName' },
   ];
 
   return (
@@ -187,6 +186,18 @@ function Businesses() {
               helperText={formErrors[name]}
             />
           ))}
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={businessData.sendReminderEmails || false}
+                onChange={handleCheckboxChange}
+              />
+            }
+            label="Wysyłaj przypomnienie o fakturze pod koniec miesiąca"
+            sx={{ mt: 1 }}
+          />
+
           <Button variant="contained" color="primary" onClick={handleSaveChanges} sx={{ mt: 2 }}>
             {isNewBusiness ? 'Dodaj firmę' : 'Zapisz zmiany'}
           </Button>

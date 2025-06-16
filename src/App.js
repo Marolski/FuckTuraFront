@@ -10,13 +10,14 @@ import InvoiceView from './components/InvoiceView'
 import CreateInvoice from './components/CreateInvoice'
 import Clients from './components/Clients';
 import Businesses from './components/Bussinesses';
+import HomePage from './components/HomePage';
 import { InvoiceProvider } from './services/context';
 
 const AppWithNavBar = () => {
   const location = useLocation(); // Hook do pobierania aktualnej trasy
 
   // Sprawdzamy, czy jesteśmy na trasie logowania lub rejestracji
-  const hideNavBar = location.pathname === '/login' || location.pathname === '/register';
+  const hideNavBar = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/';
 
   return (
     <>
@@ -24,12 +25,13 @@ const AppWithNavBar = () => {
       {!hideNavBar && <NavBar />}
       <Routes>
         {/* Trasy bez NavBar */}
+        <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/createInvoice" element={<CreateInvoice />} />
-        <Route path="/createInvoice/:id" element={<CreateInvoice />} />
 
         {/* Trasy z NavBar */}
+        <Route path="/createInvoice" element={<CreateInvoice />} />
+        <Route path="/createInvoice/:id" element={<CreateInvoice />} />
         <Route path="/home" element={<MainPage />} />
         <Route path="/invoices" element={<Invoices />} />
         <Route path="/Invoice/:id" element={<InvoiceView />} />

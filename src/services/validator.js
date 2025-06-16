@@ -20,11 +20,11 @@ export const validateForm = (formData, products) => {
     });
     // Bank Name and Account Number validation if payment method is bank transfer
     if (formData.payment === 'bank_transfer') {
-      if (!formData.bankName) {
-        errors.bankName = 'Podaj nazwę banku';
+      if (formData.bankName.length<2 || formData.bankName.length>50 || !formData.bankName) {
+        errors.bankName = 'Nazwa banku może mieć pomiędzy 2, a 50 znaków';
       }
-      if (!formData.accountNumber || formData.accountNumber.length < 26) {
-        errors.accountNumber = 'Podaj poprawny numer konta (min. 26 znaków)';
+      if (formData.accountNumber.length < 15 || formData.accountNumber.length > 34 || !formData.accountNumber) {
+        errors.accountNumber = 'Numer konta musi mieć pomiędzy 15, a 34 znaki.';
       }
     }
 
@@ -110,11 +110,6 @@ export const validateForm = (formData, products) => {
       errors.email = 'Email jest obowiązkowy';
     } else if (!/^\S+@\S+\.\S+$/.test(businessData.email)) {
       errors.email = 'Podaj poprawny adres email';
-    }
-  
-    // Telefon
-    if (!businessData.phoneNumber || businessData.phoneNumber.trim() === '') {
-      errors.phoneNumber = 'Telefon jest obowiązkowy';
     }
   
     // REGON

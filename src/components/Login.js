@@ -60,8 +60,12 @@ export default function CredentialsSignInPage() {
             slotProps={{
               emailField: {
                 type: 'username',
-                label: 'Username',
+                label: 'Nazwa użytkownika',
               },
+              passwordField:{
+                type: 'password',
+                label: 'Hasło',
+              }
             }}
             signIn={(provider, formData) => signIn(provider, formData, navigate)}
             providers={providers}

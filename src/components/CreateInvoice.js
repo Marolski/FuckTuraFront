@@ -21,11 +21,15 @@ import {
 import { validateForm } from '../services/validator';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useInvoiceContext } from '../services/context';
+import { useLocation } from 'react-router-dom';
 
 const CreateInvoice = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { markInvoiceAsAdded } = useInvoiceContext();
+  const location = useLocation();
+  const copiedInvoice = location.state?.copiedInvoice;
+
 
   const [formData, setFormData] = useState({
     sellerId: '', sellerName: '', sellerAddress: '', sellerNip: '',
@@ -65,6 +69,28 @@ const CreateInvoice = () => {
     }
   }, [id, loadingFinished, sellers]);
 
+useEffect(() => {
+  if (copiedInvoice) {
+    const safeInvoice = {
+      ...copiedInvoice,
+      invoiceDate: dayjs(),
+      saleDate: dayjs(),
+      dateOfPayment: dayjs(),
+    };
+
+    // Jeśli brakuje sellerId, odszukaj go po NIP
+    const matchedSeller = sellers.find(s => s.nip === copiedInvoice.sellerNIP);
+    if (matchedSeller) {
+      safeInvoice.sellerId = matchedSeller.id;
+    }
+
+    setFormData(safeInvoice);
+    setProducts(copiedInvoice.products || []);
+  }
+}, [copiedInvoice, sellers]);
+
+
+
   const handleClientAdd = () => setModalOpen(true);
   const handleModalClose = () => setModalOpen(false);
 
@@ -94,9 +120,11 @@ const CreateInvoice = () => {
 
   const handleSave = async (draft, id) => {
     const validationErrors = validateForm(formData, products);
-    if (Object.keys(validationErrors).length > 1) {
+    if (Object.keys(validationErrors).length >= 1) {
       setFormErrors(validationErrors);
+      console.log(Object.keys(validationErrors).length)
     } else {
+      console.log(Object.keys(validationErrors).length)
       const wasUpdate = await saveInvoice(formData, products, draft, id);
       markInvoiceAsAdded(wasUpdate);
       navigate('/invoices');
@@ -114,6 +142,7 @@ const CreateInvoice = () => {
       setSelectedBusinessId(id);
       handleSellerChange(selectedSeller.companyName, sellers, setSelectedBusinessId, setClients, setFormData);
     }
+    
     setOpenSelectSellerModal(false);
   };
 
@@ -286,6 +315,7 @@ const CreateInvoice = () => {
                     value={product.vatRate}
                     onChange={(e) => handleProductChange(index, e, setProducts, products, setFormErrors)}
                   >
+                    <MenuItem value="0%">0%</MenuItem>
                     <MenuItem value="5%">5%</MenuItem>
                     <MenuItem value="10%">10%</MenuItem>
                     <MenuItem value="23%">23%</MenuItem>
